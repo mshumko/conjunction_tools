@@ -47,7 +47,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             self.cData[key] = np.array(list(map(dateutil.parser.parse, self.cData[key])))
         return
         
-    def generatePlots(self, saveType='png', saveImg=True):
+    def generatePlots(self, saveType='png', saveImg=True, lowMagEISFlux=1E2):
         """
         Runs a loop that generates and saves plots of RBSP
         and RB data.
@@ -71,7 +71,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 self.cData['endTime'][t] + self.tPad]
             
             # Plot RBSP
-            self.plotMagEIS(self.rbsp_id, tBounds, ax[0:3])
+            self.plotMagEIS(self.rbsp_id, tBounds, ax[0:3], lowFlux=lowMagEISFlux)
             self.plotEMFISIS(self.rbsp_id, tBounds, ax[3])
             
             # Plot FIREBIRD
@@ -102,6 +102,13 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             ax[0].set(title='FU{} RBSP{} conjunction {}'.format(
                 self.fb_id, self.rbsp_id, self.cData['startTime'][t]))
             ax[0].set_xlim(tBounds)
+
+            ax[0].set_ylim((1E2, 1E5))
+            ax[1].set_ylim((1E2, 1E6))
+            ax[2].set_ylim((1E2, 1E5))
+            #for a in ax[0:3]:
+            #    a.set_ylim(bottom=lowMagEISFlux)
+
             for a in ax[:-1]:
                 plt.setp(a.get_xticklabels(), visible=False)
             #gs.tight_layout(fig)
@@ -114,7 +121,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 a.cla()
         return
         
-    def plotMagEIS(self, sc_id, tBounds, axArr):
+    def plotMagEIS(self, sc_id, tBounds, axArr, lowFlux=False):
         """
         This function is a wrapper to plot rel03 MagEIS data
         for the 0, 90, and 180 degree pitch angles. The axArr
@@ -134,6 +141,11 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             pltLegendLoc=False)
         rel03Obj.plotUnidirectionalFlux(180, ax=axArr[2],
             pltLegendLoc=False)
+        
+        # # Set lower limit flux level
+        # if lowFlux:
+        #     for aa in axArr:
+        #         aa.set_ylim(bottom=lowFlux)
         return
         
     def plotEMFISIS(self, sc_id, tBounds, zx):
