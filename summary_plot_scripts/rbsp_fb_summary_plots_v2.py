@@ -214,14 +214,15 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         return
     
 if __name__ == '__main__':
-    rb_id = 'A'
-    fb_id = 3
-    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/data/'     'merged_conjunctions/2017-10-10_RBSP_FB_T89_conjunctions')
-    paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
-    assert len(paths) == 1, 'None or multiple conjunction files found!'
+    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/data/'     
+        'merged_conjunctions/2017-10-10_RBSP_FB_T89_conjunctions')
+    for rb_id in ['A', 'B']:
+        for fb_id in [3, 4]:
+            paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
+            assert len(paths) == 1, 'None or multiple conjunction files found!'
 
-    # Run summary plot generator.
-    cPlt = FIREBIRD_RBSP_Conjunction_Plots(
-        rb_id, fb_id)
-    cPlt.readConjunctionData(paths[0])
-    cPlt.generatePlots(saveImg=True)
+            # Run summary plot generator.
+            cPlt = FIREBIRD_RBSP_Conjunction_Plots(
+                rb_id, fb_id)
+            cPlt.readConjunctionData(paths[0])
+            cPlt.generatePlots(saveImg=True)
