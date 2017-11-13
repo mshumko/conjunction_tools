@@ -1,0 +1,53 @@
+#{
+#    "deltaL": "1",
+#    "deltaMLT": "1",
+#    "duration": {
+#        "DESCRIPTION": "Duration of the conjunction",
+#        "DIMENSION": [1],
+#        "START_COLUMN": 2,
+#        "TITLE": "Duration",
+#        "UNIT": "Minutes"
+#    },
+#    "endTime": {
+#        "DESCRIPTION": "End time of the conjunction",
+#        "DIMENSION": [1],
+#        "START_COLUMN": 1,
+#        "TITLE": "End time",
+#        "UNIT": "ISO 8601 UTC"
+#    },
+#    "meanL_FU3": {
+#        "DESCRIPTION": "Mean value of the L shells during the conjunction",
+#        "DIMENSION": [1],
+#        "START_COLUMN": 3,
+#        "TITLE": "Mean L shell"
+#    },
+#    "meanL_RBSPA": {
+#        "DESCRIPTION": "Mean value of the L shells during the conjunction",
+#        "DIMENSION": [1],
+#        "START_COLUMN": 4,
+#        "TITLE": "Mean L shell"
+#    },
+#    "meanMLT_FU3": {
+#        "DESCRIPTION": "Mean value of the MLT during the conjunction",
+#        "DIMENSION": [1],
+#        "START_COLUMN": 5,
+#        "TITLE": "Mean MLT"
+#    },
+#    "meanMLT_RBSPA": {
+#        "DESCRIPTION": "Mean value of the MLT during the conjunction",
+#        "DIMENSION": [1],
+#        "START_COLUMN": 6,
+#        "TITLE": "Mean MLT"
+#    },
+#    "minL": "3",
+#    "startTime": {
+#        "DESCRIPTION": "Start time of the conjunction",
+#        "DIMENSION": [1],
+#        "START_COLUMN": 0,
+#        "TITLE": "Start time",
+#        "UNIT": "ISO 8601 UTC"
+#    }
+#}
+2015-03-24T02:08:00 2015-03-24T02:10:00 2.0 4.492091794873433 4.744763 20.873839845819415 20.46130419518216
+2015-03-24T03:43:00 2015-03-24T03:46:00 3.0 5.259103688689976 5.2326559999999995 21.546122679280728 21.837097014395805
+2015-03-24T19:43:00 2015-03-24T19:45:00 2.0 4.669353410870553 4.677523 18.754294693086038 19.708689930727388

@@ -1,0 +1,35 @@
+#{
+#    "deltaL": "0.1",
+#    "deltaMLT": "3.0",
+#    "duration": {
+#        "DIMENSION": [1],
+#        "START_COLUMN": 2
+#    },
+#    "endTime": {
+#        "DIMENSION": [1],
+#        "START_COLUMN": 1
+#    },
+#    "meanL_FU3": {
+#        "DIMENSION": [1],
+#        "START_COLUMN": 5
+#    },
+#    "meanL_RBSPB": {
+#        "DIMENSION": [1],
+#        "START_COLUMN": 3
+#    },
+#    "meanMLT_FU3": {
+#        "DIMENSION": [1],
+#        "START_COLUMN": 4
+#    },
+#    "meanMLT_RBSPB": {
+#        "DIMENSION": [1],
+#        "START_COLUMN": 6
+#    },
+#    "minL": "3.0",
+#    "startTime": {
+#        "DIMENSION": [1],
+#        "START_COLUMN": 0
+#    }
+#}
+2016-08-28T21:42:00 2016-08-28T21:43:00 1.0 4.781998 1.5058488670245236 4.844545846385255 3.38886146116841
+2016-08-30T23:56:00 2016-08-30T23:57:00 1.0 4.622426 1.7165698449431144 4.580253429873711 0.2962647200049495
