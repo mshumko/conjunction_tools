@@ -54,10 +54,12 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         """
         # Create subplots
         fig = plt.figure(figsize=(8, 11.5), dpi=80, facecolor = 'white')
-        gs = gridspec.GridSpec(6,1)
+        gs = gridspec.GridSpec(6,1, left=0.1, bottom=0.04, 
+            right=0.99, top=0.97, wspace=0.1, hspace=0.06)
         ax = [None]*6
-        for i in range(len(ax)):
-            ax[i] = fig.add_subplot(gs[i, 0])
+        ax[0] = fig.add_subplot(gs[0,0])
+        for i in range(1, len(ax)):
+            ax[i] = fig.add_subplot(gs[i, 0], sharex=ax[0])
         
         # Loop over the conjunctions.   
         for t in range(len(self.cData['startTime'])):
@@ -78,8 +80,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             # Plot Position
             self.plotPosition(ax[-1])
 
-            # If FIREBIRD data is empty and self.plot_empty_data
-            # kwarg is false, skip the plot
+            #If FIREBIRD data is empty and self.plot_empty_data
+            #kwarg is false, skip the plot
             if ((not self.plot_empty_data) and 
                     (len(self.validFBIdt) == 0)):
                 continue
@@ -89,11 +91,20 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 ).replace('-', '').replace(':', '')[0:15]
             for a in ax[1:]:
                 a.set_title('')
-            ax[0].set_ylabel(r'$J(\alpha_L = 0^\circ)$')
-            ax[1].set_ylabel(r'$J(\alpha_L = 90^\circ)$')
-            ax[2].set_ylabel(r'$J(\alpha_L = 180^\circ)$')
+            for a in ax[:-1]:
+                a.set_xlabel('')
+            ax[-1].set_xlabel('UTC')
+            
+            ax[0].set_ylabel(r'MagEIS $J(\alpha_L = 0^\circ)$')
+            ax[1].set_ylabel(r'MagEIS $J(\alpha_L = 90^\circ)$')
+            ax[2].set_ylabel(r'MagEIS $J(\alpha_L = 180^\circ)$')
+            ax[3].set_ylabel('EMFISIS WFR (Hz)')
             ax[0].set(title='FU{} RBSP{} conjunction {}'.format(
                 self.fb_id, self.rbsp_id, self.cData['startTime'][t]))
+            ax[0].set_xlim(tBounds)
+            for a in ax[:-1]:
+                plt.setp(a.get_xticklabels(), visible=False)
+            #gs.tight_layout(fig)
 
             if saveImg: # Save plots
                 saveName = '{}_FU{}_RBSP{}_conjunction'.format(
@@ -116,6 +127,9 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         self.RBSPmagEphem = rel03Obj.magEphem
         rel03Obj.plotUnidirectionalFlux(0, ax=axArr[0],
             pltLegendLoc=False)
+        # # Shrink legend fontsize
+        # for label in rel03Obj.fluxLegend.get_texts():
+        #     label.set_fontsize('5')
         rel03Obj.plotUnidirectionalFlux(90, ax=axArr[1],
             pltLegendLoc=False)
         rel03Obj.plotUnidirectionalFlux(180, ax=axArr[2],
@@ -137,21 +151,31 @@ class FIREBIRD_RBSP_Conjunction_Plots:
     def plotFIREBIRD(self, fb_id, tBounds, zx):
         fb_path = 'FU{}_Hires_{}_L2.txt'.format(
             self.fb_id, tBounds[0].date())
-        self.hr = spacepy.datamodel.readJSONheadedASCII(
-            os.path.join(self.fb_dir, fb_path))
+        try:
+            self.hr = spacepy.datamodel.readJSONheadedASCII(
+                os.path.join(self.fb_dir, fb_path))
+        except FileNotFoundError as err: # If no file exists
+            self.validFBIdt = []
+            return
+
         # Convert timestamps
         with multiprocessing.Pool() as p: # Convert HiRes times
             self.hr['Time'] = np.array(list(
                 p.map(dateutil.parser.parse, self.hr['Time'])))
         # fix timestamps
         meanDt = np.mean(self.hr['Count_Time_Correction'])
-        self.hr['Time'] = np.array([i + timedelta(seconds=meanDt) for i in self.hr['Time']])
+        self.hr['Time'] = np.array([i + timedelta(seconds=meanDt) 
+            for i in self.hr['Time']])
 
         self.validFBIdt = np.where((self.hr['Time'] > tBounds[0]) & 
             (self.hr['Time'] < tBounds[1]))[0]
-        zx.plot(self.hr['Time'][self.validFBIdt], 
-            self.hr['Col_flux'][self.validFBIdt], 
-            label=self.hr['Col_flux'].attrs['ELEMENT_LABELS'])
+        for ee in range(6):
+            zx.plot(self.hr['Time'][self.validFBIdt], 
+                self.hr['Col_counts'][self.validFBIdt, ee], 
+                label=self.hr['Col_counts'].attrs['ELEMENT_LABELS'][ee]
+                )
+        zx.legend(loc=1, fontsize=8)
+        zx.set(yscale='log', ylabel='FIREBIRD\nCol counts')
         return
 
     def plotPosition(self, zx):
@@ -162,27 +186,30 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         zx.text(x=0.01, y=0.95, s='RBSP\nMLT={}\nMLAT={}'.format(
             round(np.mean(self.RBSPmagEphem['EDMAG_MLT'][:])),
             round(np.mean(self.RBSPmagEphem['EDMAG_MLAT'][:]))),
-            transform=zx.transAxes, va='top')
+            transform=zx.transAxes, va='top', fontsize=8)
             
         # Plot and annotate FIREBIRD magnetic ephemeris if data exists
         if len(self.validFBIdt) > 0:
-            zx.plot(self.hr['McIlwainL'][self.validFBIdt], 
+            zx.plot(self.hr['Time'][self.validFBIdt],
+                self.hr['McIlwainL'][self.validFBIdt], 
                 label='FU{}'.format(self.fb_id))
-            zx.text(x=.01, y=0, s='FB\nMLT={}\nLAT={}\nLON={}'.format(
+            zx.text(x=0.1, y=0.95, 
+                s='FB\nMLT={}\nLAT={}\nLON={}'.format(
                 round(np.mean(self.hr['MLT'][self.validFBIdt])),
                 round(np.mean(self.hr['Lat'][self.validFBIdt])),
                 round(np.mean(self.hr['Lon'][self.validFBIdt]))
-                ), transform=zx.transAxes, va='bottom')
+                ), transform=zx.transAxes, va='top', fontsize=8)
         
         # Make plot readable
         zx.set(ylim=(3, 10), ylabel='L')
-        zx.legend(loc=1)
+        zx.legend(loc=1, fontsize=8)
         return
         
     def saveFig(self, **kwargs):
         saveName = kwargs.get('saveName', None)
         saveType = kwargs.get('saveType', 'png')
-        print(os.path.join(self.saveDir, saveName + '.' + saveType))
+        print('Saving to:', os.path.join(
+            self.saveDir, saveName + '.' + saveType))
         plt.savefig(os.path.join(self.saveDir, saveName + '.' + saveType), dpi = 80)
         return
     
