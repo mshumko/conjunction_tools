@@ -1,16 +1,18 @@
 import numpy as np
 import sys, os
 from datetime import datetime, timedelta
-sys.path.insert(0, os.path.join(os.path.dirname( __file__ ), '..', '..', 'auxiliary'))
-import plot_emfisis_spectra
-import download_day_emfisis
 import matplotlib.pylab as plt
+import glob
 from matplotlib import dates
 import matplotlib.gridspec as gridspec
-import dates_in_filenames
-import spacepy.datamodel
 import multiprocessing
 import dateutil.parser
+
+import spacepy.datamodel
+
+sys.path.insert(0, '/home/mike/research/mission-tools/rbsp/')
+import plot_emfisis_spectra
+import plot_mageis
 
 class FIREBIRD_RBSP_Conjunction_Plots:
     def __init__(self, rbsp_id, fb_id, **kwargs):
@@ -21,34 +23,28 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         """
         self.rbsp_id = rbsp_id
         self.fb_id = fb_id
+        self.plot_empty_data = kwargs.get('plot_empty_data', True)
         self.tPad = kwargs.get('tPad', timedelta(minutes = 2))
-#        self.temp_data_dir = kwargs.get('temp_save_dir', 
-#            '/home/ms30715/ssd_data/shumko/data/temp_data')
+        self.fb_dir = ('/home/mike/research/firebird/'
+            'Datafiles/FU_{}/hires/level2'.format(self.fb_id))
         self.saveDir = kwargs.get('saveDir', 
-            '/home/ms30715/ssd_data/shumko/results/conjunctions/{}'.format(
+            '/home/mike/research/conjunction-tools/plots/{}'.format(
                 datetime.now().date().isoformat()))
         if not os.path.exists(self.saveDir):
             os.makedirs(self.saveDir)
             print('Created directory: {}'.format(self.saveDir))
         return
             
-    def readConjunctiondata(self, cDataPath=None, cDataName=None, dL=1, dMLT=1): 
+    def readConjunctionData(self, path, dL=1, dMLT=1): 
         """
         This function reads in the conjunction data. 
         """
-        if (cDataPath is None) and (cDataName is None):
-            cDataPath = ('/home/ms30715/ssd_data/shumko/0_code/conjunctiontoolkit/data/merged_conjunctions/2017_05_31_FB_T89_RBSP_TS04_conjunctions')
-            self.cDataName = 'FU{}_RBSP{}_dmlt_{}_dL_{}_conjunctions_hr_filtered.txt'.format(
-                self.fb_id, self.rbsp_id, dMLT, dL)
-        
         # Read in the conjunction data
-        self.cData = spacepy.datamodel.readJSONheadedASCII(
-            os.path.join(cDataPath, self.cDataName))
+        self.cData = spacepy.datamodel.readJSONheadedASCII(path)
             
         # Convert conjunction times to datetime objects
         for key in ['startTime', 'endTime']:
             self.cData[key] = np.array(list(map(dateutil.parser.parse, self.cData[key])))
-
         return
         
     def generatePlots(self, saveType='png', saveImg=True):
@@ -56,6 +52,12 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         Runs a loop that generates and saves plots of RBSP
         and RB data.
         """
+        # Create subplots
+        fig = plt.figure(figsize=(8, 11.5), dpi=80, facecolor = 'white')
+        gs = gridspec.GridSpec(6,1)
+        ax = [None]*6
+        for i in range(len(ax)):
+            ax[i] = fig.add_subplot(gs[i, 0])
         
         # Loop over the conjunctions.   
         for t in range(len(self.cData['startTime'])):
@@ -68,26 +70,37 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             
             # Plot RBSP
             self.plotMagEIS(self.rbsp_id, tBounds, ax[0:3])
-            self.plotEMFISIS(self.sc_id, tBounds, ax[3])
+            self.plotEMFISIS(self.rbsp_id, tBounds, ax[3])
             
             # Plot FIREBIRD
-            
+            self.plotFIREBIRD(self.fb_id, tBounds, ax[4])
+
             # Plot Position
-            self.plotPosition(ax[-2:])
-            
-            # Format date correctly
-            date = datetime.combine(self.cData['startTime'][t].date(), datetime.min.time())
-            statMsg = self.compare_emfisis_fb_col(date, tBounds = tBounds) # Create plots
-            if statMsg == -9999:
+            self.plotPosition(ax[-1])
+
+            # If FIREBIRD data is empty and self.plot_empty_data
+            # kwarg is false, skip the plot
+            if ((not self.plot_empty_data) and 
+                    (len(self.validFBIdt) == 0)):
                 continue
-            # Save plots
-            if saveImg:
-                # Format times into <YYYY><MM><DD>T<HH><MM><SS> format.
-                startDate =  datetime.now().isoformat().replace('-', '').replace(':', '')[0:15]
-                endDate = tBounds[1].isoformat().replace('-', '')
+
+            # Beautify plots
+            datetimeStr = self.cData['startTime'][t].isoformat(
+                ).replace('-', '').replace(':', '')[0:15]
+            for a in ax[1:]:
+                a.set_title('')
+            ax[0].set_ylabel(r'$J(\alpha_L = 0^\circ)$')
+            ax[1].set_ylabel(r'$J(\alpha_L = 90^\circ)$')
+            ax[2].set_ylabel(r'$J(\alpha_L = 180^\circ)$')
+            ax[0].set(title='FU{} RBSP{} conjunction {}'.format(
+                self.fb_id, self.rbsp_id, self.cData['startTime'][t]))
+
+            if saveImg: # Save plots
                 saveName = '{}_FU{}_RBSP{}_conjunction'.format(
-                    startDate, self.fb_id, self.rbsp_id)
+                    datetimeStr, self.fb_id, self.rbsp_id)
                 self.saveFig(saveName=saveName, saveType=saveType)
+            for a in ax: # Clear subplots
+                a.cla()
         return
         
     def plotMagEIS(self, sc_id, tBounds, axArr):
@@ -97,38 +110,73 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         is an array of three subplots to which plot the
         different pitch angle data.
         """
-        rel03Obj = PlotMageis(rb_id, tBounds[0], dtype,
+        rel03Obj = plot_mageis.PlotMageis(rb_id, tBounds[0], 'rel03',
             tRange=tBounds)
         rel03Obj.loadMagEphem(Bmodel='T89D')
-        self.RBSPmagEphem = rel03obj.magEphem
-        rel03Obj.plotUnidirectionalFlux(0, ax=axArr[0])
-        rel03Obj.plotUnidirectionalFlux(90, ax=axArr[1])
-        rel03Obj.plotUnidirectionalFlux(180, ax=axArr[2])
+        self.RBSPmagEphem = rel03Obj.magEphem
+        rel03Obj.plotUnidirectionalFlux(0, ax=axArr[0],
+            pltLegendLoc=False)
+        rel03Obj.plotUnidirectionalFlux(90, ax=axArr[1],
+            pltLegendLoc=False)
+        rel03Obj.plotUnidirectionalFlux(180, ax=axArr[2],
+            pltLegendLoc=False)
         return
         
-    def plotEMFISIS(self, sc_id, tBounds, ax):
+    def plotEMFISIS(self, sc_id, tBounds, zx):
         """
         Wrapper to plot EMFISIS data.
         """
-        pObj = EMFISISspectra(sc_id, tBounds[0],
+        pObj = plot_emfisis_spectra.EMFISISspectra(sc_id, tBounds[0],
             tBounds=tBounds)
         pObj.loadWFRSpectra()
         pObj.loadMagEphem()
-        pObj.plotSpectra(ax=ax)
+        pObj.plotSpectra(ax=zx, plotCb=False, grid=False, 
+            legendLoc=False)
         return 
-        
-    def plotPosition(self, axArr):
-        # Plot RBSP magnetic ephemeris
-        axArr[0].plot(self.RBSPmagEphem['DateTime'], 
-            self.magEphem['Lstar'][:, 0], label='RBSP')
-        axArr[1].plot(self.RBSPmagEphem['DateTime'], 
-            self.magEphem['EDMAG_MLT'][:], label='RBSP')  
+
+    def plotFIREBIRD(self, fb_id, tBounds, zx):
+        fb_path = 'FU{}_Hires_{}_L2.txt'.format(
+            self.fb_id, tBounds[0].date())
+        self.hr = spacepy.datamodel.readJSONheadedASCII(
+            os.path.join(self.fb_dir, fb_path))
+        # Convert timestamps
+        with multiprocessing.Pool() as p: # Convert HiRes times
+            self.hr['Time'] = np.array(list(
+                p.map(dateutil.parser.parse, self.hr['Time'])))
+        # fix timestamps
+        meanDt = np.mean(self.hr['Count_Time_Correction'])
+        self.hr['Time'] = np.array([i + timedelta(seconds=meanDt) for i in self.hr['Time']])
+
+        self.validFBIdt = np.where((self.hr['Time'] > tBounds[0]) & 
+            (self.hr['Time'] < tBounds[1]))[0]
+        zx.plot(self.hr['Time'][self.validFBIdt], 
+            self.hr['Col_flux'][self.validFBIdt], 
+            label=self.hr['Col_flux'].attrs['ELEMENT_LABELS'])
+        return
+
+    def plotPosition(self, zx):
+        # Plot and annotate RBSP magnetic ephemeris
+        zx.plot(self.RBSPmagEphem['DateTime'], 
+            self.RBSPmagEphem['Lstar'][:, 0], 
+            label='RBSP{}'.format(self.rbsp_id))
+        zx.text(x=0.01, y=0.95, s='RBSP\nMLT={}\nMLAT={}'.format(
+            round(np.mean(self.RBSPmagEphem['EDMAG_MLT'][:])),
+            round(np.mean(self.RBSPmagEphem['EDMAG_MLAT'][:]))),
+            transform=zx.transAxes, va='top')
             
-        # Plot FIREBIRD magnetic ephemeris  
+        # Plot and annotate FIREBIRD magnetic ephemeris if data exists
+        if len(self.validFBIdt) > 0:
+            zx.plot(self.hr['McIlwainL'][self.validFBIdt], 
+                label='FU{}'.format(self.fb_id))
+            zx.text(x=.01, y=0, s='FB\nMLT={}\nLAT={}\nLON={}'.format(
+                round(np.mean(self.hr['MLT'][self.validFBIdt])),
+                round(np.mean(self.hr['Lat'][self.validFBIdt])),
+                round(np.mean(self.hr['Lon'][self.validFBIdt]))
+                ), transform=zx.transAxes, va='bottom')
         
         # Make plot readable
-        axArr[0].set(ylim=(3, 10), ylabel='L')
-        axArr[1].set(ylabel='MLT')
+        zx.set(ylim=(3, 10), ylabel='L')
+        zx.legend(loc=1)
         return
         
     def saveFig(self, **kwargs):
@@ -139,9 +187,14 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         return
     
 if __name__ == '__main__':
-    for rbsp_id in ['A', 'B']:
-        for fb_id in [3, 4]:
-            cPlt = FIREBIRD_RBSP_Conjunction_Plots(
-                rbsp_id, fb_id)
-            cPlt.readConjunctiondata(dL='0dot1', dMLT=3)
-            cPlt.generatePlots(saveImg=True)
+    rb_id = 'A'
+    fb_id = 3
+    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/data/'     'merged_conjunctions/2017-10-10_RBSP_FB_T89_conjunctions')
+    paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
+    assert len(paths) == 1, 'None or multiple conjunction files found!'
+
+    # Run summary plot generator.
+    cPlt = FIREBIRD_RBSP_Conjunction_Plots(
+        rb_id, fb_id)
+    cPlt.readConjunctionData(paths[0])
+    cPlt.generatePlots(saveImg=True)

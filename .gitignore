@@ -1,3 +1,5 @@
 */__pycache__/*
 /data/daily_conjunctions/*
 __pycache__/
+*.png
+*.pdf
