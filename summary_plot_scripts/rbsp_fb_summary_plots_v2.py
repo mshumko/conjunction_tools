@@ -84,6 +84,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             #kwarg is false, skip the plot
             if ((not self.plot_empty_data) and 
                     (len(self.validFBIdt) == 0)):
+                for a in ax: # Clear subplots
+                    a.cla()
                 continue
 
             # Beautify plots
@@ -95,9 +97,9 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 a.set_xlabel('')
             ax[-1].set_xlabel('UTC')
             
-            ax[0].set_ylabel(r'MagEIS $J(\alpha_L = 0^\circ)$')
-            ax[1].set_ylabel(r'MagEIS $J(\alpha_L = 90^\circ)$')
-            ax[2].set_ylabel(r'MagEIS $J(\alpha_L = 180^\circ)$')
+            ax[0].set_ylabel(r'MagEIS $J \ (\alpha_L \approx 0^\circ)$' + '\n(probably not LC)')
+            ax[1].set_ylabel(r'MagEIS $J \ (\alpha_L = 90^\circ)$')
+            ax[2].set_ylabel(r'MagEIS $J \ (\alpha_L \approx 180^\circ)$' + '\n(probably not LC)')
             ax[3].set_ylabel('EMFISIS WFR (Hz)')
             ax[0].set(title='FU{} RBSP{} conjunction {}'.format(
                 self.fb_id, self.rbsp_id, self.cData['startTime'][t]))
@@ -235,6 +237,6 @@ if __name__ == '__main__':
 
             # Run summary plot generator.
             cPlt = FIREBIRD_RBSP_Conjunction_Plots(
-                rb_id, fb_id)
+                rb_id, fb_id, plot_empty_data=False)
             cPlt.readConjunctionData(paths[0])
             cPlt.generatePlots(saveImg=True)
