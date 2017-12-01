@@ -471,16 +471,18 @@ class MagneticConjunctionCalc:
         
         if save_name is None:
             # If spacecraft id's not specified, do not include them in the filename.
-            if (self.mission_id_A is 'missionA') and (self.mission_id_B is 'missionB'):
-                save_name = (self.magephemA[self.timeKeyA][0].date().isoformat() + 
-                '_' + self.magephemA[self.timeKeyA][-1].date().isoformat() + 
-                '_conjunctions.txt')
+            if (self.mission_id_A is not 'missionA') and (self.mission_id_B is not 'missionB'):
+                startDate = self.magephemA[self.timeKeyA][0].date()
+                endDate = self.magephemA[self.timeKeyA][-1].date()
+                save_name = ('{}_{}_{}_dL_{}_dMLT_{}_conjunctions.txt'.format(
+                    self.mission_id_A, self.mission_id_B, startDate, self.L_thresh,
+                    self.MLT_thresh))
+                globalAttrs['missions'] = [self.mission_id_A, self.mission_id_B]
             else:
                 save_name = (self.magephemA[self.timeKeyA][0].date().isoformat() + 
                 '_' + self.magephemA[self.timeKeyA][-1].date().isoformat() + 
                 '_' + self.mission_id_A + '_' + self.mission_id_B + 
                 '_conjunctions.txt')
-                globalAttrs['missions'] = [self.mission_id_A, self.mission_id_B]
                 
         startTimeAttrs = {"UNIT":'ISO 8601 UTC', 'DESCRIPTION':'Start time of the '+
         'conjunction', 'TITLE':'Start time'}

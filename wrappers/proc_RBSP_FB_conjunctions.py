@@ -65,18 +65,18 @@ for fb_id in ['3', '4']:
                 # MODIFY THIS!
                 saveName = ('FU{}_RBSP{}_'.format(fb_id, rbsp_id) + 
                     datesA[i][0] + '_conjunctions.txt')
-                save_dir = ('/home/mike/research/conjunctiontoolkit/data/'
+                save_dir = ('/home/mike/research/conjunction-tools/data/'
                     'daily_conjunctions')
                     
                 # Select the pitch angle of Lstar to use
                 LcolB = -1
                     
                 cCalc = conjunctiontoolkit.MagneticConjunctionCalc(
-                    fDirA, fnameA, fDirB, fnameB, mission_id_A = 'FU' + str(fb_id), 
-                    mission_id_B = 'RBSP' + str(rbsp_id), verbose = True, 
-                    Lthresh = dL,  MLTthresh = dMLT, timeKeyB = 'DateTime', 
-                    MLTkeyB = 'EDMAG_MLT', LkeyB = 'L', LcolB = LcolB, 
-                    lowerL = lowerL) 
+                    fDirA, fnameA, fDirB, fnameB, mission_id_A='FU'+str(fb_id), 
+                    mission_id_B='RBSP'+str(rbsp_id), verbose=True, 
+                    Lthresh=dL,  MLTthresh=dMLT, timeKeyB='DateTime', 
+                    MLTkeyB='EDMAG_MLT', LkeyB='L', LcolB=LcolB, 
+                    lowerL=lowerL) 
                     
                 cCalc.magephemB[cCalc.timeKeyB] = np.array([i.replace(tzinfo=None)  
                     for i in cCalc.magephemB[cCalc.timeKeyB]])
@@ -94,6 +94,6 @@ for fb_id in ['3', '4']:
                         datetime.now(), np.array(datesA)[i], str(err)))
                     continue
                 #cCalc.plotLMLTandDLDMLT( 'FU' + str(fb_id), 'RBSP' + str(rbsp_id))
-                cCalc.save_to_file(save_name = saveName, save_dir = save_dir)
+                cCalc.save_to_file(save_dir=save_dir)
                 
 print('Program execution:{}'.format(time.time() - startTime))
