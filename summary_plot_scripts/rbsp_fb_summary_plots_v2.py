@@ -44,7 +44,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             
         # Convert conjunction times to datetime objects
         for key in ['startTime', 'endTime']:
-            self.cData[key] = np.array(list(map(dateutil.parser.parse, self.cData[key])))
+            self.cData[key] = np.array(
+                list(map(dateutil.parser.parse, self.cData[key])))
         return
         
     def generatePlots(self, saveType='png', saveImg=True, lowMagEISFlux=1E2):
@@ -62,13 +63,13 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             ax[i] = fig.add_subplot(gs[i, 0], sharex=ax[0])
         
         # Loop over the conjunctions.   
-        for t in range(len(self.cData['startTime'])):
+        for (st, et) in zip(self.cData['startTime'], self.cData['endTime']):
             print('Processing {}-{}, {} to {} conjunction'.format(
                 self.fb_id, self.rbsp_id,
-                self.cData['startTime'][t].isoformat(), self.cData['endTime'][t].isoformat()))
+                st.isoformat(), et.isoformat()))
             # Widen the time bounds a little.
-            tBounds = [self.cData['startTime'][t] - self.tPad, 
-                self.cData['endTime'][t] + self.tPad]
+            tBounds = [st - self.tPad, 
+                et + self.tPad]
             
             # Plot RBSP
             self.plotMagEIS(self.rbsp_id, tBounds, ax[0:3], lowFlux=lowMagEISFlux)
@@ -89,8 +90,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 continue
 
             # Beautify plots
-            datetimeStr = self.cData['startTime'][t].isoformat(
-                ).replace('-', '').replace(':', '')[0:15]
+            datetimeStr = st.isoformat().replace('-', '').replace(':', '')[0:15]
             for a in ax[1:]:
                 a.set_title('')
             for a in ax[:-1]:
@@ -102,7 +102,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             ax[2].set_ylabel(r'MagEIS $J \ (\alpha_L \approx 180^\circ)$' + '\n(probably not LC)')
             ax[3].set_ylabel('EMFISIS WFR (Hz)')
             ax[0].set(title='FU{} RBSP{} conjunction {}'.format(
-                self.fb_id, self.rbsp_id, self.cData['startTime'][t]))
+                self.fb_id, self.rbsp_id, st))
             ax[0].set_xlim(tBounds)
 
             ax[0].set_ylim((1E2, 1E5))
@@ -229,7 +229,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
     
 if __name__ == '__main__':
     CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/data/'     
-        'merged_conjunctions/2017-10-10_RBSP_FB_T89_conjunctions')
+        'merged_conjunctions/camp13_RBSP_FB')
     for rb_id in ['A', 'B']:
         for fb_id in [3, 4]:
             paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
@@ -237,6 +237,6 @@ if __name__ == '__main__':
 
             # Run summary plot generator.
             cPlt = FIREBIRD_RBSP_Conjunction_Plots(
-                rb_id, fb_id, plot_empty_data=False)
+                rb_id, fb_id, plot_empty_data=True)
             cPlt.readConjunctionData(paths[0])
             cPlt.generatePlots(saveImg=True)

@@ -542,6 +542,7 @@ class MagneticConjunctionCalc:
             self.L_thresh = kwargs.get('Lthresh', self.L_thresh)
             self.MLT_thresh = kwargs.get('MLTthresh', self.MLT_thresh)
             self.ind = np.where((self.dMLT < self.MLT_thresh) & (self.dL < self.L_thresh))[0]
+            print(self.ind)
             return self.ind
             
         self.ind = np.array([])
@@ -654,3 +655,22 @@ def locateConsecutiveNumbers(x):
     startInd = np.insert(consecutiveFlag, 0, 0)
     endInd = np.insert(consecutiveFlag, len(consecutiveFlag), len(x)-1)
     return startInd[:-1], endInd[:-1] # Fix the off by 1 error!
+
+if __name__ == '__main__':
+    fNameA = '20171130_FU4_T89_MagEphem.txt'
+    fNameB = 'rbspa_def_MagEphem_T89D_20171130_v1.0.0.txt'
+    fDirA = '/home/mike/research/firebird/Datafiles/FU_4/magephem/'
+    fDirB = '/home/mike/research/rbsp/magephem/rbspa/'
+
+    cCalc = MagneticConjunctionCalc(fDirA, fNameA, fDirB, fNameB, Lthresh=1, MLTthresh=1, timeKeyB='DateTime', MLTkeyB='EDMAG_MLT', LkeyB='L', LcolB=-1, lowerL=3)
+
+    cCalc.magephemB[cCalc.timeKeyB] = np.array([i.replace(tzinfo=None)  
+                for i in cCalc.magephemB[cCalc.timeKeyB]])
+            
+    cCalc.periodic_data_indicies() 
+    cCalc.calc_magnetic_seperation()
+    cCalc.calc_L_MLT_conjunction_delay(0)
+    cCalc.lower_L_bound()
+
+    cCalc.calc_conjunction_duration()
+    cCalc.plotLMLTandDLDMLT()
