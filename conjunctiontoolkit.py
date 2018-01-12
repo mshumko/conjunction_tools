@@ -303,7 +303,9 @@ class MagneticConjunctionCalc:
                 
         # Find the consecutive times in the indicies.
         #startInd, endInd = locateConsecutiveNumbers(ind)
-        tDict = duration_test.time_continuity(self.magephemA[self.timeKeyA][ind])
+        tDict = duration_test.time_continuity(
+            self.magephemA[self.timeKeyA][ind],
+            self.cadence*60)
         startInd = tDict['startTime'].astype(int)
         endInd = tDict['endTime'].astype(int)
 
@@ -344,7 +346,7 @@ class MagneticConjunctionCalc:
                 self.magephemA[self.MLTkeyA][ind[startInd[i]:endInd[i]]])
             self.durationDict[ 'meanMLT_' + self.mission_id_B][i] = np.mean(
                 self.magephemB[self.MLTkeyB][ind[startInd[i]:endInd[i]]])
-            
+
         # Look for, and remove error values
         validInd = np.where(self.durationDict['duration'] != -9999)[0]
         #print(validInd)
@@ -659,6 +661,8 @@ def locateConsecutiveNumbers(x):
 if __name__ == '__main__':
     fNameA = '20171130_FU4_T89_MagEphem.txt'
     fNameB = 'rbspa_def_MagEphem_T89D_20171130_v1.0.0.txt'
+    # fNameA = '20171129_FU4_T89_MagEphem.txt'
+    # fNameB = 'rbspa_def_MagEphem_T89D_20171129_v1.0.0.txt'
     fDirA = '/home/mike/research/firebird/Datafiles/FU_4/magephem/'
     fDirB = '/home/mike/research/rbsp/magephem/rbspa/'
 

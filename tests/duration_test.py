@@ -5,11 +5,11 @@ from statistics import mode
 from datetime import datetime, timedelta
 
 # This function will find the locations when time stamps are contonous.
-def time_continuity(t):
+def time_continuity(t, cadence):
     """
     NAME:    time_continuity(t)   
     USE:     Calculates where the supplied time array is continous.
-    INPUT:   A numpy time array
+    INPUT:   A numpy time array, a cadence in seconds
     RETURNS: A dictionary with 'startTime', 'endTime', and 'duration's for the 
              time array given. The duration array is given in data points,
              not time!
@@ -26,10 +26,9 @@ def time_continuity(t):
         'duration':np.array([1], dtype = int)}
         return tDict
 
-    #print(t, dt)
-
     # Subtract the min (should be the cadence) to flag the jumps in dt.
-    dt -= min(dt)
+    #dt -= min(dt)
+    dt -= cadence
 
     # Find where the jumps occur
     jumpInd = np.where(dt != 0)[0]
