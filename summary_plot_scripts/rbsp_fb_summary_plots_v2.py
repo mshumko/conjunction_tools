@@ -237,6 +237,6 @@ if __name__ == '__main__':
 
             # Run summary plot generator.
             cPlt = FIREBIRD_RBSP_Conjunction_Plots(
-                rb_id, fb_id, plot_empty_data=True)
+                rb_id, fb_id, plot_empty_data=False)
             cPlt.readConjunctionData(paths[0])
             cPlt.generatePlots(saveImg=True)
