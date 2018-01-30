@@ -48,16 +48,23 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 list(map(dateutil.parser.parse, self.cData[key])))
         return
         
-    def generatePlots(self, saveType='png', saveImg=True, lowMagEISFlux=1E2):
+    def generatePlots(self, saveType='png', saveImg=True, lowMagEISFlux=1E2, pltMagEIS=False):
         """
         Runs a loop that generates and saves plots of RBSP
         and RB data.
         """
         # Create subplots
-        fig = plt.figure(figsize=(8, 11.5), dpi=80, facecolor = 'white')
-        gs = gridspec.GridSpec(6,1, left=0.1, bottom=0.04, 
+        if pltMagEIS:
+            h = 11.5
+            nPanels = 6
+        else:
+            h = 8
+            nPanels = 3
+
+        fig = plt.figure(figsize=(8, h), dpi=80, facecolor = 'white')
+        gs = gridspec.GridSpec(nPanels,1, left=0.1, bottom=0.04, 
             right=0.99, top=0.97, wspace=0.1, hspace=0.06)
-        ax = [None]*6
+        ax = [None]*nPanels
         ax[0] = fig.add_subplot(gs[0,0])
         for i in range(1, len(ax)):
             ax[i] = fig.add_subplot(gs[i, 0], sharex=ax[0])
@@ -71,12 +78,21 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             tBounds = [st - self.tPad, 
                 et + self.tPad]
             
-            # Plot RBSP
-            self.plotMagEIS(self.rbsp_id, tBounds, ax[0:3], lowFlux=lowMagEISFlux)
-            self.plotEMFISIS(self.rbsp_id, tBounds, ax[3])
+            if pltMagEIS:
+                # Plot RBSP (If no data is found, move on to next conjunction)
+                try:
+                    self.plotMagEIS(self.rbsp_id, tBounds, ax[0:3], lowFlux=lowMagEISFlux)
+                except AssertionError as err:
+                    if 'no filtered spectra found in the time range specified!' in str(err):
+                        print(err)
+                        continue
+                    else:
+                        raise
+                    
+            self.plotEMFISIS(self.rbsp_id, tBounds, ax[-3])
             
             # Plot FIREBIRD
-            self.plotFIREBIRD(self.fb_id, tBounds, ax[4])
+            self.plotFIREBIRD(self.fb_id, tBounds, ax[-2])
 
             # Plot Position
             self.plotPosition(ax[-1])
@@ -97,17 +113,17 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 a.set_xlabel('')
             ax[-1].set_xlabel('UTC')
             
-            ax[0].set_ylabel(r'MagEIS $J \ (\alpha_L \approx 0^\circ)$' + '\n(probably not LC)')
-            ax[1].set_ylabel(r'MagEIS $J \ (\alpha_L = 90^\circ)$')
-            ax[2].set_ylabel(r'MagEIS $J \ (\alpha_L \approx 180^\circ)$' + '\n(probably not LC)')
-            ax[3].set_ylabel('EMFISIS WFR (Hz)')
+            if pltMagEIS:
+                ax[0].set_ylabel(r'MagEIS $J \ (\alpha_L \approx 0^\circ)$' + '\n(probably not LC)')
+                ax[1].set_ylabel(r'MagEIS $J \ (\alpha_L = 90^\circ)$')
+                ax[2].set_ylabel(r'MagEIS $J \ (\alpha_L \approx 180^\circ)$' + '\n(probably not LC)')
+                ax[0].set_ylim((1E2, 1E5))
+                ax[1].set_ylim((1E2, 1E6))
+                ax[2].set_ylim((1E2, 1E5))
+            ax[-3].set_ylabel('EMFISIS WFR (Hz)')
             ax[0].set(title='FU{} RBSP{} conjunction {}'.format(
                 self.fb_id, self.rbsp_id, st))
             ax[0].set_xlim(tBounds)
-
-            ax[0].set_ylim((1E2, 1E5))
-            ax[1].set_ylim((1E2, 1E6))
-            ax[2].set_ylim((1E2, 1E5))
             #for a in ax[0:3]:
             #    a.set_ylim(bottom=lowMagEISFlux)
 
@@ -133,7 +149,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         rel03Obj = plot_mageis.PlotMageis(rb_id, tBounds[0], 'rel03',
             tRange=tBounds)
         rel03Obj.loadMagEphem(Bmodel='T89D')
-        self.RBSPmagEphem = rel03Obj.magEphem
+        #self.RBSPmagEphem = rel03Obj.magEphem
         rel03Obj.plotUnidirectionalFlux(0, ax=axArr[0],
             pltLegendLoc=False)
         # # Shrink legend fontsize
@@ -158,6 +174,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             tBounds=tBounds)
         pObj.loadWFRSpectra()
         pObj.loadMagEphem()
+        self.magEphem = pObj.magEphem
         pObj.plotSpectra(ax=zx, plotCb=False, grid=False, 
             legendLoc=False)
         return 
@@ -194,12 +211,12 @@ class FIREBIRD_RBSP_Conjunction_Plots:
 
     def plotPosition(self, zx):
         # Plot and annotate RBSP magnetic ephemeris
-        zx.plot(self.RBSPmagEphem['DateTime'], 
-            self.RBSPmagEphem['Lstar'][:, 0], 
+        zx.plot(self.magEphem['DateTime'], 
+            self.magEphem['Lstar'][:, 0], 
             label='RBSP{}'.format(self.rbsp_id))
         zx.text(x=0.01, y=0.95, s='RBSP\nMLT={}\nMLAT={}'.format(
-            round(np.mean(self.RBSPmagEphem['EDMAG_MLT'][:])),
-            round(np.mean(self.RBSPmagEphem['EDMAG_MLAT'][:]))),
+            round(np.mean(self.magEphem['EDMAG_MLT'][:])),
+            round(np.mean(self.magEphem['EDMAG_MLAT'][:]))),
             transform=zx.transAxes, va='top', fontsize=8)
             
         # Plot and annotate FIREBIRD magnetic ephemeris if data exists
@@ -230,8 +247,9 @@ class FIREBIRD_RBSP_Conjunction_Plots:
 if __name__ == '__main__':
     CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/data/'     
         'merged_conjunctions/camp13_RBSP_FB')
-    for rb_id in ['A', 'B']:
-        for fb_id in [3, 4]:
+    for rb_id in ['B']:
+        for fb_id in [4]:
+            print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
             paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
             assert len(paths) == 1, 'None or multiple conjunction files found!'
 
