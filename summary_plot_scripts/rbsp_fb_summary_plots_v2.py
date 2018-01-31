@@ -215,8 +215,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             self.magEphem['Lstar'][:, 0], 
             label='RBSP{}'.format(self.rbsp_id))
         zx.text(x=0.01, y=0.95, s='RBSP\nMLT={}\nMLAT={}'.format(
-            round(np.mean(self.magEphem['EDMAG_MLT'][:])),
-            round(np.mean(self.magEphem['EDMAG_MLAT'][:]))),
+            round(np.mean(self.magEphem['EDMAG_MLT'][:]), 1),
+            round(np.mean(self.magEphem['EDMAG_MLAT'][:]), 1)),
             transform=zx.transAxes, va='top', fontsize=8)
             
         # Plot and annotate FIREBIRD magnetic ephemeris if data exists
@@ -226,9 +226,9 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 label='FU{}'.format(self.fb_id))
             zx.text(x=0.1, y=0.95, 
                 s='FB\nMLT={}\nLAT={}\nLON={}'.format(
-                round(np.mean(self.hr['MLT'][self.validFBIdt])),
-                round(np.mean(self.hr['Lat'][self.validFBIdt])),
-                round(np.mean(self.hr['Lon'][self.validFBIdt]))
+                round(np.mean(self.hr['MLT'][self.validFBIdt]), 1),
+                round(np.mean(self.hr['Lat'][self.validFBIdt]), 1),
+                round(np.mean(self.hr['Lon'][self.validFBIdt]), 1)
                 ), transform=zx.transAxes, va='top', fontsize=8)
         
         # Make plot readable
@@ -247,8 +247,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
 if __name__ == '__main__':
     CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/data/'     
         'merged_conjunctions/camp13_RBSP_FB')
-    for rb_id in ['B']:
-        for fb_id in [4]:
+    for rb_id in ['A', 'B']:
+        for fb_id in [3, 4]:
             print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
             paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
             assert len(paths) == 1, 'None or multiple conjunction files found!'
