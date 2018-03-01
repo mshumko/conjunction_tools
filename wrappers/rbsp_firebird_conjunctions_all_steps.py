@@ -19,7 +19,7 @@ sys.path.insert(0, '/home/mike/research/conjunction-tools/data/')
 import datamerge
 
 # Set user parameters for the script
-START_DATE = datetime(2017, 11, 18)
+START_DATE = datetime(2018, 2, 25)
 END_DATE = datetime(2017, 12, 14)
 FIREBIRD_KP = 20
 
