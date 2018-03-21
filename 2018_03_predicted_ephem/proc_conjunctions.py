@@ -43,5 +43,5 @@ for fb_id in [3, 4]:
         #     logging.info('{} \n No conjunctions found on day {} \n {} \n'.format(
         #         datetime.now(), np.array(datesA)[i], str(err)))
         #     continue
-        cCalc.plotLMLTandDLDMLT(A_id='FU'+str(fb_id), B_id='RBSP'+str(rb_id))
-        #cCalc.save_to_file(save_name = SAVE_NAME, save_dir = FDIR)
+        #cCalc.plotLMLTandDLDMLT(A_id='FU'+str(fb_id), B_id='RBSP'+str(rb_id))
+        cCalc.save_to_file(save_name = SAVE_NAME, save_dir = FDIR)

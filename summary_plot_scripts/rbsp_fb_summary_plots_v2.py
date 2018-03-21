@@ -88,8 +88,15 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                         continue
                     else:
                         raise
-                    
-            self.plotEMFISIS(self.rbsp_id, tBounds, ax[-3])
+            # Try except block to keep the script from crashing if no EMFISIS data is found.
+            try:        
+                self.plotEMFISIS(self.rbsp_id, tBounds, ax[-3])
+            except AssertionError as err:
+                if 'multiple WFR files found!' in str(err):
+                    continue
+                else:
+                    raise
+
             
             # Plot FIREBIRD
             self.plotFIREBIRD(self.fb_id, tBounds, ax[-2])
@@ -245,8 +252,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         return
     
 if __name__ == '__main__':
-    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/data/'     
-        'merged_conjunctions/camp13_RBSP_FB')
+    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/2018_03_predicted_ephem')
     for rb_id in ['A', 'B']:
         for fb_id in [3, 4]:
             print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
