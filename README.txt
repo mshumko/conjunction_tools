@@ -4,7 +4,7 @@ comments, questions, or bugs to msshumko at gmail.com.
 To run the conjunction calculator, read the __init__ function for all of the 
 required and optional inputs. 
 
-The basic workflow for MagneticConjunctionCalc class is as follow.
+The basic workflow for conjunctiontools.MagneticConjunctionCalc class is as follow.
 
 1. IF the data is in JSON headed ASCII format. 
         THEN: Call the class with paths to magnetic ephemeris data. Specify 

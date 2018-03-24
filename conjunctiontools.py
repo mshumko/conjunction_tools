@@ -610,6 +610,10 @@ class MagneticConjunctionCalc:
         if self.verbose: print('Data reduced for 1-to-1 comparison.')
         return 
 
+    def interpConjunction(self):
+
+        return
+
 def dmlt(a, b):
     """
     NAME:    dmlt(a, b)
