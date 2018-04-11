@@ -16,8 +16,8 @@ FDIR = '/home/mike/research/conjunction-tools/2018_03_predicted_ephem'
 
 for fb_id in [3, 4]:
     for rb_id in ['A', 'B']:
-        FNAME_A = ('FU{}_2018-02-20_2018-03-31_magephem_pre.txt'.format(fb_id))
-        FNAME_B = ('rbsp{}_2018-02-25_2018-03-31_magephem_pre.txt'.format(
+        FNAME_A = ('FU{}_2018-02-26_2018-03-31_magephem.txt'.format(fb_id))
+        FNAME_B = ('rbsp{}_magephem.txt'.format(
                     rb_id.lower()))
         SAVE_NAME = ('FU{}_RBSP{}_camp14_conjunctions_pre.txt'.format(
                     fb_id, rb_id))

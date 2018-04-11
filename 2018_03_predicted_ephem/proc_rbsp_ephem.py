@@ -9,10 +9,10 @@ import spacepy.datamodel
 sys.path.insert(0, '/home/mike/research/firebird/data_processing/'         'magnetic_ephemeris')
 import make_magnetic_ephemeris
 
-sc_id = 'A'
+sc_id = 'B'
 ephemDir = ('/home/mike/research/conjunction-tools/'
     '2018_03_predicted_ephem')
-ephemName = ('rbsp{}_ephem_pre.txt'.format(
+ephemName = ('rbsp{}_ephem.txt'.format(
     sc_id.lower()))
 saveName = ephemName.split('_')
 saveName[-1] = 'magephem.txt'

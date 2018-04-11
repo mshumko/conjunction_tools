@@ -11,8 +11,8 @@ import make_magnetic_ephemeris
 
 for sc_id in [3, 4]:
     ephemDir = '/home/mike/research/conjunction-tools/2018_03_predicted_ephem'
-    ephemName = ('FU{}_2018-02-20_2018-03-31'
-                '_LLA_ephemeris_pre.csv'.format(sc_id))
+    ephemName = ('FU{}_2018-02-26_2018-03-31'
+                '_LLA_ephemeris_def.csv'.format(sc_id))
     saveName = ephemName.split('_')
     saveName[-1] = 'TLE_magepehem.txt'
     saveName = '_'.join(saveName)
