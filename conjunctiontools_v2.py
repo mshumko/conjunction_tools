@@ -31,6 +31,10 @@ class MagneticConjunctions():
         self.Lthresh = kwargs.get('Lthresh', 1)
         self.MLTthresh = kwargs.get('MLTthresh', 1)
 
+        # magephem args
+        self.magArgsA = magephemAargs
+        self.magArgsB = magephemBargs
+
         # Aux params
         self.REPLACE_ERROR_VALS = kwargs.get('REPLACE_ERROR_VALS', np.nan)
 
@@ -48,14 +52,13 @@ class MagneticConjunctions():
         if footpointAlt is set to an integer, then this method will
         calculate the smallest footpoint separation.
         """
-        self.dL = np.abs(self.magA[self.LkeyA] - 
-                self.magA[self.LkeyB])
-        self.dMLT = dmlt(self.magB[self.MLTkeyA], 
-                self.magB[self.MLTkeyB])
+        self.dL = np.abs(self.magA[self.magArgsA[3]] - 
+                self.magB[self.magArgsB[3]])
+        self.dMLT = dmlt(self.magA[self.magArgsA[2]], 
+                self.magB[self.magArgsB[2]])
 
         # Calc indicies where separation meets conjunction criteria.
         idC = np.where((self.dL < self.Lthresh) & (self.dMLT < self.MLTthresh))[0]
-
         return
 
     def _load_magephem(self, fPath, tKey, MLTkey, Lkey, Lcol=None):
@@ -63,6 +66,7 @@ class MagneticConjunctions():
         This helper method loads in the magnetic ephemeris data,
         and converts the times to datetimes.
         """
+        print(fPath, tKey, MLTkey, Lkey, Lcol)
         mag = dm.readJSONheadedASCII(fPath)
         # Convert times
         mag[tKey] = np.array([dateutil.parser.parse(t) for t in mag[tKey]])
@@ -72,11 +76,11 @@ class MagneticConjunctions():
             mag[key][mag[key] == -1.0e+31] = self.REPLACE_ERROR_VALS
 
         if Lcol is not None:
-            mag[Lkey] = mag[Lkey][L, Lcol]
+            mag[Lkey] = mag[Lkey][:, Lcol]
 
         # Make all L shells positive (to avoid issues in the BLC)
         mag[Lkey] = np.abs(mag[Lkey])
-        return
+        return mag
 
     def _find_common_times(self):
         """
@@ -84,15 +88,15 @@ class MagneticConjunctions():
         and shrinks them to those times.
         """
         # Convert times to numbers
-        tA = date2num(self.magA['dateTime'])
-        tB = date2num(self.magB['dateTime'])
+        tA = date2num(self.magA[self.magArgsA[1]])
+        tB = date2num(self.magB[self.magArgsB[1]])
 
         idTA = np.in1d(tA, tB)
-        idtB = np.in1d(tB, tA)
+        idTB = np.in1d(tB, tA)
 
-        for key in self.magA.keys():
+        for key in self.magArgsA[1:4]:
             self.magA[key] = self.magA[key][idTA]
-        for key in self.magB.keys():
+        for key in self.magArgsB[1:4]:
             self.magB[key] = self.magB[key][idTB]
         return
 
@@ -117,4 +121,15 @@ def dmlt(a, b):
     return 24/(2*np.pi)*np.arccos(np.cos(arg))
 
 if __name__ == '__main__':
-    pass
+    fNameA = '20171130_FU4_T89_MagEphem.txt'
+    fNameB = 'rbspa_def_MagEphem_T89D_20171130_v1.0.0.txt'
+    # fNameA = '20171129_FU4_T89_MagEphem.txt'
+    # fNameB = 'rbspa_def_MagEphem_T89D_20171129_v1.0.0.txt'
+    fDirA = '/home/mike/research/firebird/Datafiles/FU_4/magephem/'
+    fDirB = '/home/mike/research/rbsp/magephem/rbspa/'
+
+    magA = (os.path.join(fDirA, fNameA), 'dateTime', 'MLT', 'McllwainL')
+    magB = (os.path.join(fDirB, fNameB), 'DateTime', 'EDMAG_MLT', 'Lstar', -1)
+
+    M = MagneticConjunctions(magA, magB)
+    M.calc_conjunctions()

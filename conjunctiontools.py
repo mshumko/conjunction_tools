@@ -693,7 +693,8 @@ if __name__ == '__main__':
     cCalc.periodic_data_indicies() 
     cCalc.calc_magnetic_seperation()
     cCalc.calc_L_MLT_conjunction_delay(0)
-    cCalc.lower_L_bound()
+    print(cCalc.ind)
+    # cCalc.lower_L_bound()
 
-    cCalc.calc_conjunction_duration()
-    cCalc.plotLMLTandDLDMLT()
+    # cCalc.calc_conjunction_duration()
+    # cCalc.plotLMLTandDLDMLT()
