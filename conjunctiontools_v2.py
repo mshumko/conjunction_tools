@@ -13,8 +13,29 @@ import scipy
 
 import IRBEM
 
+# This dictionary contains the magEphem L, MLT, lat, lon, alt, 
+# time keys for reading in the data. 
+keyDict = {
+        'FIREBIRD':{
+            'L':'McllwainL', 'MLT':'MLT', 'time':'dateTime', 
+            'lat':'Rgeod_LatLon', 'latCol':0, 'lon':'Rgeod_LatLon', 
+            'lonCol':1, 'alt':'Rgeod_Altitude'
+            },
+
+        'AC6':{
+            'L':'Lm_OPQ', 'MLT':'MLT_OPQ', 'time':'dateTime',
+            'lat':None, 'lon':None, 'alt':None
+            },
+
+        'RBSP':{
+            'L':'Lstar', 'Lcol':-1, 'MLT':'EDMAG_MLT', 
+            'time':'DateTime', 'lat':'Rgeod_LatLon', 'latCol':0,
+            'lon':'Rgeod_LatLon', 'lonCol':1, 'alt':'Rgeod_Height'
+            }
+        }
+
 class MagneticConjunctions(IRBEM.MagFields):
-    def __init__(self, magephemAargs, magephemBargs, **kwargs):
+    def __init__(self, missionA, missionB, magA, magB, **kwargs):
         """
         NAME:    MagneticConjunctions()
         USE:     This is the second iteration of the magnetic conjunction calc.
@@ -35,8 +56,11 @@ class MagneticConjunctions(IRBEM.MagFields):
         self.MLTthresh = kwargs.get('MLTthresh', 1)
 
         # magephem args
-        self.magArgsA = magephemAargs
-        self.magArgsB = magephemBargs
+        #self.magArgsA = magephemAargs
+        #self.magArgsB = magephemBargs
+        
+        self.magArgsA = kwargs.get('magArgsA', keyDict[missionA])
+        self.magArgsB = kwargs.get('magArgsB', keyDict[missionB])
 
         # Aux params
         self.REPLACE_ERROR_VALS = kwargs.get('REPLACE_ERROR_VALS', np.nan)
@@ -46,10 +70,15 @@ class MagneticConjunctions(IRBEM.MagFields):
         IRBEM.MagFields.__init__(self)
 
         ### Load data if necessary (assuming it is in a JSON headed ASCII file) ###
-        if isinstance(magephemAargs, tuple):
-            self.magA = self._load_magephem(*magephemAargs)
-        if isinstance(magephemBargs, tuple):
-            self.magB = self._load_magephem(*magephemBargs)
+        if isinstance(magA, str):
+            self.magA = self._load_magephem(magA, self.magArgsA)
+        else:
+            self.magA = magA
+            
+        if isinstance(magB, str):
+            self.magB = self._load_magephem(magB, self.magArgsB)
+        else:
+            self.magB = magB
         self._find_common_times()
         return
     
@@ -64,10 +93,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         separation at a given altitude (in whatever hemisphere it 
         is the smallest).
         """
-        self.dL = np.abs(self.magA[self.magArgsA[3]] - 
-                self.magB[self.magArgsB[3]])
-        self.dMLT = dmlt(self.magA[self.magArgsA[2]], 
-                self.magB[self.magArgsB[2]])
+        self.dL = np.abs(self.magA['L'] - self.magB['L'])
+        self.dMLT = dmlt(self.magA['MLT'], self.magB['MLT'])
 
         # Calc indicies where separation meets conjunction criteria.
         idC = np.where((self.dL < self.Lthresh) & (self.dMLT < self.MLTthresh))[0]
@@ -93,27 +120,40 @@ class MagneticConjunctions(IRBEM.MagFields):
         ### Calculate closest footpoint separation ###
 
 
-        return
+        return startInd, endInd
 
-    def _load_magephem(self, fPath, tKey, MLTkey, Lkey, Lcol=None):
+    def _load_magephem(self, fPath, args):
         """
         This helper method loads in the magnetic ephemeris data,
         and converts the times to datetimes.
         """
         mag = dm.readJSONheadedASCII(fPath)
-        # Convert times
-        mag[tKey] = np.array([dateutil.parser.parse(t) for t in mag[tKey]])
+        
+        # Copy over the usefull data, and standardize the dict keys
+        magFlt = {}
+        magFlt['dateTime'] = np.array([dateutil.parser.parse(t) 
+                            for t in mag[args['time']]]) 
+        # L and MLT
+        if 'Lcol' in args:
+            magFlt['L'] = np.abs(mag[args['L']][:, args['Lcol']])
+        else:
+            magFlt['L'] = np.abs(mag[args['L']])
+        magFlt['MLT'] = mag[args['MLT']]
+        # Replace error values
+        magFlt['L'][magFlt['L'] == -1.0e+31] = self.REPLACE_ERROR_VALS
+        magFlt['MLT'][magFlt['MLT'] == -1.0e+31] = self.REPLACE_ERROR_VALS
 
-        # Replace L and MLT errors values.
-        for key in [Lkey, MLTkey]:
-            mag[key][mag[key] == -1.0e+31] = self.REPLACE_ERROR_VALS
-
-        if Lcol is not None:
-            mag[Lkey] = mag[Lkey][:, Lcol]
-
-        # Make all L shells positive (to avoid issues in the BLC)
-        mag[Lkey] = np.abs(mag[Lkey])
-        return mag
+        ### FORMAT LAT, LON, ALT arrays ###
+        if 'latCol' in args:
+            # Break up the lat, lon, alt keys
+            magFlt['lat'] = mag[args['lat']][:, args['latCol']]
+            magFlt['lon'] = mag[args['lon']][:, args['lonCol']]
+        else:
+            mag['lat'] = mag[args['lat']]
+            mag['lon'] = mag[args['lon']]
+        
+        magFlt['alt'] = mag[args['alt']]
+        return magFlt
 
     def _find_common_times(self):
         """
@@ -121,16 +161,22 @@ class MagneticConjunctions(IRBEM.MagFields):
         and shrinks them to those times.
         """
         # Convert times to numbers
-        tA = date2num(self.magA[self.magArgsA[1]])
-        tB = date2num(self.magB[self.magArgsB[1]])
+        tA = date2num(self.magA['dateTime'])
+        tB = date2num(self.magB['dateTime'])
 
         idTA = np.in1d(tA, tB)
         idTB = np.in1d(tB, tA)
-
-        for key in self.magArgsA[1:4]:
-            self.magA[key] = self.magA[key][idTA]
-        for key in self.magArgsB[1:4]:
-            self.magB[key] = self.magB[key][idTB]
+        # Try-except block to not accidently try to filter the an auxillary key.
+        for key in self.magA.keys():
+            try:
+                self.magA[key] = self.magA[key][idTA]
+            except KeyError as err:
+                raise
+        for key in self.magB.keys():
+            try:
+                self.magB[key] = self.magB[key][idTB]
+            except KeyError as err:
+                raise
         return
 
     def _calc_start_stop(self, ind):
@@ -176,6 +222,8 @@ def dmlt(a, b):
     return 24/(2*np.pi)*np.arccos(np.cos(arg))
 
 if __name__ == '__main__':
+    missionA = 'FIREBIRD'
+    missionB = 'RBSP'
     fNameA = '20171130_FU4_T89_MagEphem.txt'
     fNameB = 'rbspa_def_MagEphem_T89D_20171130_v1.0.0.txt'
     # fNameA = '20171129_FU4_T89_MagEphem.txt'
@@ -183,8 +231,12 @@ if __name__ == '__main__':
     fDirA = '/home/mike/research/firebird/Datafiles/FU_4/magephem/'
     fDirB = '/home/mike/research/rbsp/magephem/rbspa/'
 
-    magA = (os.path.join(fDirA, fNameA), 'dateTime', 'MLT', 'McllwainL')
-    magB = (os.path.join(fDirB, fNameB), 'DateTime', 'EDMAG_MLT', 'Lstar', -1)
+    #magA = (os.path.join(fDirA, fNameA), 'dateTime', 'MLT', 'McllwainL')
+    #magB = (os.path.join(fDirB, fNameB), 'DateTime', 'EDMAG_MLT', 'Lstar', -1)
 
-    M = MagneticConjunctions(magA, magB)
-    M.calc_conjunctions(interpP=())
+    magA = os.path.join(fDirA, fNameA)
+    magB = os.path.join(fDirB, fNameB)
+
+    m = MagneticConjunctions(missionA, missionB,
+        magA, magB)
+    si, ei = m.calc_conjunctions(interpP=())
