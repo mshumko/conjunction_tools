@@ -18,8 +18,8 @@ import IRBEM
 keyDict = {
         'FIREBIRD':{
             'L':'McllwainL', 'MLT':'MLT', 'time':'dateTime', 
-            'lat':'Rgeod_LatLon', 'latCol':0, 'lon':'Rgeod_LatLon', 
-            'lonCol':1, 'alt':'Rgeod_Altitude'
+            'lat':'Rgeod_LatLon', 'latcol':0, 'lon':'Rgeod_LatLon', 
+            'loncol':1, 'alt':'Rgeod_Altitude'
             },
 
         'AC6':{
@@ -29,8 +29,8 @@ keyDict = {
 
         'RBSP':{
             'L':'Lstar', 'Lcol':-1, 'MLT':'EDMAG_MLT', 
-            'time':'DateTime', 'lat':'Rgeod_LatLon', 'latCol':0,
-            'lon':'Rgeod_LatLon', 'lonCol':1, 'alt':'Rgeod_Height'
+            'time':'DateTime', 'lat':'Rgeod_LatLon', 'latcol':0,
+            'lon':'Rgeod_LatLon', 'loncol':1, 'alt':'Rgeod_Height'
             }
         }
 
@@ -100,7 +100,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         idC = np.where((self.dL < self.Lthresh) & (self.dMLT < self.MLTthresh))[0]
         #idC = idC[:-1]
         #print(idC)
-        startInd, endInd = self._calc_start_stop(idC)
+        self.startInd, self.endInd = self._calc_start_stop(idC)
 
 
 
@@ -118,9 +118,21 @@ class MagneticConjunctions(IRBEM.MagFields):
         # Now interpolate L and MLT around the flagged conjunctions.
 
         ### Calculate closest footpoint separation ###
+        return
 
-
-        return startInd, endInd
+    def testPlots(self):
+        """ 
+        This method plots the dL and dMLT for each of the times 
+        flagged for a conjunction.
+        """
+        for si, ei in zip(self.startInd, self.endInd):
+            fig, ax = plt.subplots()
+            ax.plot(self.magA['dateTime'][si-5:ei+5], self.dL[si-5:ei+5], 'r', label='dL')
+            ax.plot(self.magA['dateTime'][si-5:ei+5], self.dMLT[si-5:ei+5], 'b', label='dMLT')
+            ax.axvline(self.magA['dateTime'][si])
+            ax.axvline(self.magA['dateTime'][ei-1])
+            plt.legend()
+        return
 
     def _load_magephem(self, fPath, args):
         """
@@ -131,28 +143,20 @@ class MagneticConjunctions(IRBEM.MagFields):
         
         # Copy over the usefull data, and standardize the dict keys
         magFlt = {}
-        magFlt['dateTime'] = np.array([dateutil.parser.parse(t) 
+        magFlt['dateTime'] = np.array([dateutil.parser.parse(t).replace(tzinfo=None)
                             for t in mag[args['time']]]) 
-        # L and MLT
-        if 'Lcol' in args:
-            magFlt['L'] = np.abs(mag[args['L']][:, args['Lcol']])
-        else:
-            magFlt['L'] = np.abs(mag[args['L']])
-        magFlt['MLT'] = mag[args['MLT']]
-        # Replace error values
-        magFlt['L'][magFlt['L'] == -1.0e+31] = self.REPLACE_ERROR_VALS
-        magFlt['MLT'][magFlt['MLT'] == -1.0e+31] = self.REPLACE_ERROR_VALS
 
-        ### FORMAT LAT, LON, ALT arrays ###
-        if 'latCol' in args:
-            # Break up the lat, lon, alt keys
-            magFlt['lat'] = mag[args['lat']][:, args['latCol']]
-            magFlt['lon'] = mag[args['lon']][:, args['lonCol']]
-        else:
-            mag['lat'] = mag[args['lat']]
-            mag['lon'] = mag[args['lon']]
-        
-        magFlt['alt'] = mag[args['alt']]
+        # Loop over all of the following keys, and save to appropriate keys in
+        # the magEphem dict.
+        for key in ['L', 'MLT', 'lat', 'lon', 'alt']:
+            # If true, take the specified column.
+            if ''.join([key.lower(), 'col']) in [x.lower() for x in args.keys()]:
+                magFlt[key] = mag[args[key]][:, args[key+'col']]
+            else:
+                magFlt[key] = mag[args[key]]
+            if key == 'L': # Fold in negative (BLC) values.
+                magFlt[key] = np.abs(magFlt[key])
+            magFlt[key][magFlt[key] == 1.0e+31] = self.REPLACE_ERROR_VALS
         return magFlt
 
     def _find_common_times(self):
@@ -239,4 +243,6 @@ if __name__ == '__main__':
 
     m = MagneticConjunctions(missionA, missionB,
         magA, magB)
-    si, ei = m.calc_conjunctions(interpP=())
+    m.calc_conjunctions(interpP=())
+    #m.testPlots()
+    #plt.show()
