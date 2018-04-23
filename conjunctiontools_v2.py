@@ -6,7 +6,7 @@ import multiprocessing
 import numpy as np
 import os, sys
 import matplotlib.pylab as plt
-from matplotlib.dates import date2num
+from matplotlib.dates import date2num, num2date
 import operator 
 import itertools
 import scipy
@@ -54,11 +54,10 @@ class MagneticConjunctions(IRBEM.MagFields):
         self.lowerL = kwargs.get('lowerL', 1)
         self.Lthresh = kwargs.get('Lthresh', 1)
         self.MLTthresh = kwargs.get('MLTthresh', 1)
+        self.missionA = missionA
+        self.missionB = missionB
 
-        # magephem args
-        #self.magArgsA = magephemAargs
-        #self.magArgsB = magephemBargs
-        
+        # magephem args       
         self.magArgsA = kwargs.get('magArgsA', keyDict[missionA])
         self.magArgsB = kwargs.get('magArgsB', keyDict[missionB])
 
@@ -101,7 +100,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         # Calc where indicies are continous
         self.startInd, self.endInd = self._calc_start_stop(idC) 
         ### Interpolate L and MLT around the flagged conjunctions. ###
-
+        if interpP is None:
+            self._interp_geo_pos
         ### Calculate closest footpoint separation ###
 
         return
@@ -112,12 +112,30 @@ class MagneticConjunctions(IRBEM.MagFields):
         flagged for a conjunction.
         """
         for si, ei in zip(self.startInd, self.endInd):
-            fig, ax = plt.subplots()
-            ax.plot(self.magA['dateTime'][si-5:ei+5], self.dL[si-5:ei+5], 'r', label='dL')
-            ax.plot(self.magA['dateTime'][si-5:ei+5], self.dMLT[si-5:ei+5], 'b', label='dMLT')
-            ax.axvline(self.magA['dateTime'][si])
-            ax.axvline(self.magA['dateTime'][ei-1])
-            plt.legend()
+            fig, ax = plt.subplots(4, sharex=True, figsize=(6, 8))
+            ax[0].plot(self.magA['dateTime'][si-5:ei+5], self.dL[si-5:ei+5], 'r', label='dL')
+            ax[0].plot(self.magA['dateTime'][si-5:ei+5], self.dMLT[si-5:ei+5], 'b', label='dMLT')
+            ax[0].set_ylabel('dL ad dMLT')
+
+            ax[1].plot(self.magA['dateTime'][si-5:ei+5], self.magA['L'][si-5:ei+5],
+                     'r', label='{}'.format(self.missionA))
+            ax[1].plot(self.magA['dateTime'][si-5:ei+5], self.magB['L'][si-5:ei+5],
+                     'b', label='{}'.format(self.missionB))
+            ax[1].set_ylabel('L shell')
+
+            ax[-2].plot(self.magA['dateTime'][si-5:ei+5], self.magA['lat'][si-5:ei+5],'r')
+            ax[-2].plot(self.magA['dateTime'][si-5:ei+5], self.magB['lat'][si-5:ei+5],'b')
+            ax[-2].set_ylabel('latitude [deg]')
+
+            ax[-1].plot(self.magA['dateTime'][si-5:ei+5], self.magA['lon'][si-5:ei+5],'r')
+            ax[-1].plot(self.magA['dateTime'][si-5:ei+5], self.magB['lon'][si-5:ei+5],'b')
+            ax[-1].set_ylabel('longitude [deg]')
+
+            for a in ax:
+                a.axvline(self.magA['dateTime'][si])
+                a.axvline(self.magA['dateTime'][ei-1])
+                a.legend(loc=1)
+            plt.tight_layout()
         return
 
     def _load_magephem(self, fPath, args):
@@ -151,8 +169,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         and shrinks them to those times.
         """
         # Convert times to numbers
-        tA = date2num(self.magA['dateTime'])
-        tB = date2num(self.magB['dateTime'])
+        self.tA = date2num(self.magA['dateTime'])
+        self.tB = date2num(self.magB['dateTime'])
 
         idTA = np.in1d(tA, tB) # Efficient way to calculate the same times
         idTB = np.in1d(tB, tA) # between two data sets.
@@ -160,6 +178,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         for key in self.magA.keys(): # Filter data.
             self.magA[key] = self.magA[key][idTA]
             self.magB[key] = self.magB[key][idTB]
+        self.tA = self.tA[idTA]
+        self.tB = self.tB[idTB]
         return
 
     def _calc_start_stop(self, ind):
@@ -176,14 +196,22 @@ class MagneticConjunctions(IRBEM.MagFields):
             endInd = np.append(endInd, ind[-1]+1)
         return startInd, endInd
 
-    def _interp_conjunction(self, startInd, endInd, interpP):
+    def _interp_geo_pos(self, key, startInd, endInd):
         """
-        This helper method uses the lat/lon/alt data in the
-        magephem to interpolate it, and calculate L and MLT with
-        T89 with Kp = 2 (default)
+        This helper method interpolates the lat/lon/alt data. The longitude
+        coordinate is treated separately.
         """
+        tInterp = np.linspace(self.tA[startInd], self.tA[endInd]) 
+        if 'lon' in key.lower():
+            pass
+        else:
+            fA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
+                self.magA[key][startInd:endInd], kind='cubic')
+            fB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
+                self.magB[key][startInd:endInd], kind='cubic')
+        return np.num2date(tInterp) fA(tInterp), fB(tInterp)
 
-        return
+    
 
 def dmlt(a, b):
     """
