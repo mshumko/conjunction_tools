@@ -98,26 +98,12 @@ class MagneticConjunctions(IRBEM.MagFields):
 
         # Calc indicies where separation meets conjunction criteria.
         idC = np.where((self.dL < self.Lthresh) & (self.dMLT < self.MLTthresh))[0]
-        #idC = idC[:-1]
-        #print(idC)
-        self.startInd, self.endInd = self._calc_start_stop(idC)
-
-
-
-        ### TEST CODE ###
-        # for sI, eI in zip(startInd, endInd):
-        #     plt.plot(self.dL[sI-2:eI+1], 'r')
-        #     interpT = np.linspace(0, (eI+2-sI+1))
-        #     fL = scipy.interpolate.interp1d(np.arange(eI+2-sI+2), self.dL[sI-2:eI+2], kind='quadratic')
-        #     plt.scatter(interpT, fL(interpT), c='r')
-        #     #plt.plot(self.dMLT[sI-1:eI+1])
-        # plt.show()
-        #for sI, eI in zip(startInd, endInd):
-        #    print(self.dL[sI:eI], self.dMLT[sI:eI])
-        #######
-        # Now interpolate L and MLT around the flagged conjunctions.
+        # Calc where indicies are continous
+        self.startInd, self.endInd = self._calc_start_stop(idC) 
+        ### Interpolate L and MLT around the flagged conjunctions. ###
 
         ### Calculate closest footpoint separation ###
+
         return
 
     def testPlots(self):
@@ -156,7 +142,7 @@ class MagneticConjunctions(IRBEM.MagFields):
                 magFlt[key] = mag[args[key]]
             if key == 'L': # Fold in negative (BLC) values.
                 magFlt[key] = np.abs(magFlt[key])
-            magFlt[key][magFlt[key] == 1.0e+31] = self.REPLACE_ERROR_VALS
+            magFlt[key][np.abs(magFlt[key]) == 1.0e+31] = self.REPLACE_ERROR_VALS
         return magFlt
 
     def _find_common_times(self):
@@ -168,19 +154,12 @@ class MagneticConjunctions(IRBEM.MagFields):
         tA = date2num(self.magA['dateTime'])
         tB = date2num(self.magB['dateTime'])
 
-        idTA = np.in1d(tA, tB)
-        idTB = np.in1d(tB, tA)
-        # Try-except block to not accidently try to filter the an auxillary key.
-        for key in self.magA.keys():
-            try:
-                self.magA[key] = self.magA[key][idTA]
-            except KeyError as err:
-                raise
-        for key in self.magB.keys():
-            try:
-                self.magB[key] = self.magB[key][idTB]
-            except KeyError as err:
-                raise
+        idTA = np.in1d(tA, tB) # Efficient way to calculate the same times
+        idTB = np.in1d(tB, tA) # between two data sets.
+        
+        for key in self.magA.keys(): # Filter data.
+            self.magA[key] = self.magA[key][idTA]
+            self.magB[key] = self.magB[key][idTB]
         return
 
     def _calc_start_stop(self, ind):
@@ -234,15 +213,11 @@ if __name__ == '__main__':
     # fNameB = 'rbspa_def_MagEphem_T89D_20171129_v1.0.0.txt'
     fDirA = '/home/mike/research/firebird/Datafiles/FU_4/magephem/'
     fDirB = '/home/mike/research/rbsp/magephem/rbspa/'
-
-    #magA = (os.path.join(fDirA, fNameA), 'dateTime', 'MLT', 'McllwainL')
-    #magB = (os.path.join(fDirB, fNameB), 'DateTime', 'EDMAG_MLT', 'Lstar', -1)
-
     magA = os.path.join(fDirA, fNameA)
     magB = os.path.join(fDirB, fNameB)
 
     m = MagneticConjunctions(missionA, missionB,
         magA, magB)
     m.calc_conjunctions(interpP=())
-    #m.testPlots()
-    #plt.show()
+    m.testPlots()
+    plt.show()
