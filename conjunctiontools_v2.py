@@ -63,7 +63,7 @@ class MagneticConjunctions(IRBEM.MagFields):
 
         # Aux params
         self.REPLACE_ERROR_VALS = kwargs.get('REPLACE_ERROR_VALS', np.nan)
-        self.Kp = kwargs.get('Kp', 2) # For interplation.
+        self.Kp = kwargs.get('Kp', 20) # For interplation.
 
         # Initializa IRBEM
         IRBEM.MagFields.__init__(self)
@@ -81,7 +81,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         self._find_common_times()
         return
     
-    def calc_conjunctions(self, interpP=None):
+    def calc_conjunctions(self, interp=True):
         """
         This method calculates the conjunctions, and their duration.
         If interpP is a tuple with lat, lon, alt keys for spacecraft 
@@ -100,8 +100,9 @@ class MagneticConjunctions(IRBEM.MagFields):
         # Calc where indicies are continous
         self.startInd, self.endInd = self._calc_start_stop(idC) 
         ### Interpolate L and MLT around the flagged conjunctions. ###
-        #if interpP is None:
-            #self._interp_geo_pos()
+        if interp:
+
+            interpDict = self._interp_geo_pos()
         ### Calculate closest footpoint separation ###
 
         return
@@ -113,7 +114,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         """
         for si, ei in zip(self.startInd, self.endInd):
             # Interpolate
-            interpDict = self._interp_geo_pos(si-2, ei+2)
+            interpDict = self._interp_geo_pos(si-5, ei+5)
 
             fig, ax = plt.subplots(5, sharex=True, figsize=(6, 8))
             ax[0].plot(self.magA['dateTime'][si-5:ei+5], self.dL[si-5:ei+5], 'r', label='dL')
@@ -209,6 +210,19 @@ class MagneticConjunctions(IRBEM.MagFields):
             endInd = np.append(endInd, ind[-1]+1)
         return startInd, endInd
 
+    def _calc_d_dMLT_param(self, startInd, endInd, alt=500):
+        """
+        This method is a wrapper for the interpolation in lat/lon/alt
+        coordinates. This method also calculates the smallest footprint
+        separation at an altitude alt. Lastly, it calculates dMLT when 
+        L shells cross.
+        """
+        # get interpolated lat/lon/alt
+        interpDict = self._interp_geo_pos(startInd, endInd)
+        #Xa = 
+        fpotNA = self.find_foot_point(X, {'Kp':self.Kp})
+        return
+
     def _interp_geo_pos(self, startInd, endInd):
         """
         This helper method interpolates the lat/lon/alt data. The longitude
@@ -231,16 +245,42 @@ class MagneticConjunctions(IRBEM.MagFields):
         interpDict['altB'] = faltB(tInterp)
 
         # Be carefull with lons over the 180 degree boundary.
-        flonA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
-            self.magA['lon'][startInd:endInd], kind='cubic')
-        flonB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
-            self.magB['lon'][startInd:endInd], kind='cubic')
-        interpDict['lonA'] = flonA(tInterp)
-        interpDict['lonB'] = flonB(tInterp)
+        interpDict['lonA'], interpDict['lonB'] = self._interp_lon(
+                                        tInterp, startInd, endInd)
         interpDict['dateTime'] = num2date(tInterp)
         return interpDict
 
-    
+    def _interp_lon(self, tInterp, startInd, endInd):
+        """
+
+        """
+        lonA = self.magA['lon'][startInd:endInd].copy()
+        lonB = self.magB['lon'][startInd:endInd].copy()
+        dLonA = lonA[1:] - lonA[:-1]
+        dLonB = lonB[1:] - lonB[:-1]
+
+        LonA_idx = np.where(dLonA > 100)[0] + 1
+        LonB_idx = np.where(dLonB > 100)[0] + 1
+        #+1 accounts for different array sizes
+        for i in LonA_idx:
+            lonA[i:] -= 360
+            # dLonA[i:] -= 360
+        for i in LonB_idx:
+            # dLonB[i:] -= 360
+            lonB[i:] -= 360
+        
+        flonA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
+            lonA, kind='cubic')
+        flonB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
+            lonB, kind='cubic')
+        flonA, flonB = flonA(tInterp), flonB(tInterp)
+        while np.min(flonA) < -180:
+            idx = np.where(flonA < -180)[0][0]
+            flonA[idx:] += 360
+        while np.min(flonB) < -180:
+            idx = np.where(flonB < -180)[0][0]
+            flonB[idx:] += 360
+        return flonA, flonB
 
 def dmlt(a, b):
     """
