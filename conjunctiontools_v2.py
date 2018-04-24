@@ -235,7 +235,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         separation at an altitude alt. Lastly, it calculates dMLT when 
         L shells cross.
         """
-        self.dmin = np.ones_like(self.startInd)
+        self.dmin = np.nan*np.ones_like(self.startInd)
         self.MLTmin = np.nan*np.ones_like(self.startInd)
         self.startTime = np.nan*np.ones(len(self.startInd), dtype=object)
         self.endTime = np.nan*np.ones(len(self.startInd), dtype=object)
@@ -296,8 +296,14 @@ class MagneticConjunctions(IRBEM.MagFields):
             # Calc the closst separation.
             dN = greatCircleDist(footpointNA, footpointNB)
             dS = greatCircleDist(footpointSA, footpointSB)
-            self.dmin[ci] = np.min(np.stack((dN, dS)))
-
+            try:
+                self.dmin[ci] = np.min(np.append(dN[dN > 0], dS[dS > 0]))
+            except ValueError as err:
+                if str(err) == 'zero-size array to reduction operation minimum which has no identity':
+                    print('WARNING: dmin not found (IRBEM error values)')
+                    self.dmin[ci] == -1E31
+                else: 
+                    raise
             # Calculate start/stop times as well as dMLT at closest L
             # shell separation.
             self.startTime[ci], self.endTime[ci], self.minMLT[ci] = self._find_c_bounds(
