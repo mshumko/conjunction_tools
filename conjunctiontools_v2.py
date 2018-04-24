@@ -10,6 +10,8 @@ from matplotlib.dates import date2num, num2date
 import operator 
 import itertools
 import scipy
+import spacepy
+import csv
 
 import IRBEM
 
@@ -65,7 +67,7 @@ class MagneticConjunctions(IRBEM.MagFields):
 
         # Aux params
         self.REPLACE_ERROR_VALS = kwargs.get('REPLACE_ERROR_VALS', np.nan)
-        self.Kp = kwargs.get('Kp', 20) # Deault kp for interplation.
+        #self.Kp = kwargs.get('Kp', 20) # Deault kp for interplation.
 
         # Initializa IRBEM
         IRBEM.MagFields.__init__(self)
@@ -83,7 +85,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         self._find_common_times()
         return
     
-    def calc_conjunctions(self, interp=True):
+    def calcConjunctions(self, interp=True):
         """
         This method calculates the conjunctions, and their duration.
         If interpP is a tuple with lat, lon, alt keys for spacecraft 
@@ -102,11 +104,23 @@ class MagneticConjunctions(IRBEM.MagFields):
         # Calc where indicies are continous
         self.startInd, self.endInd = self._calc_start_stop(idC) 
         ### Interpolate L and MLT around the flagged conjunctions. ###
+        ### Calculate closest footpoint separation ###
         if interp:
             self._calc_d_dMLT_param()        
-            
-        ### Calculate closest footpoint separation ###
+        else:
+            raise NotImplementedError('Simple non-interp mode not implemented.')
+        return
 
+    def saveData(self, sPath):
+        """
+        This method saves the conjunction data to a csv file.
+        """
+        saveData = np.stack((self.startTime, self.endTime, self.dmin, self.minMLT), axis=1)
+        with open(sPath, 'w', newline='') as f:
+            w = csv.writer(f)
+            # Save header
+            w.writerow(['startTime', 'endTime', 'minD [km]', 'minMLT'])
+            w.writerows(saveData)
         return
 
     def testPlots(self):
@@ -114,7 +128,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         This method plots the dL and dMLT for each of the times 
         flagged for a conjunction.
         """
-        for si, ei in zip(self.startInd, self.endInd):
+        for i, (si, ei) in enumerate(zip(self.startInd, self.endInd)):
             # Interpolate
             interpDict = self._interp_geo_pos(si-5, ei+5)
 
@@ -148,8 +162,10 @@ class MagneticConjunctions(IRBEM.MagFields):
             ax[-1].set_ylabel('longitude [deg]')
 
             for a in ax:
-                a.axvline(self.magA['dateTime'][si])
-                a.axvline(self.magA['dateTime'][ei-1])
+                a.axvline(self.magA['dateTime'][si], c='k', label='Approx bounds')
+                a.axvline(self.magA['dateTime'][ei-1], c='k')
+                a.axvline(self.startTime[i], c='r', label='Bounds')
+                a.axvline(self.endTime[i], c='r')
                 a.legend(loc=1)
             plt.tight_layout()
         return
@@ -219,22 +235,31 @@ class MagneticConjunctions(IRBEM.MagFields):
         separation at an altitude alt. Lastly, it calculates dMLT when 
         L shells cross.
         """
-        self.dmin = 1E31*np.ones_like(self.startInd)
+        self.dmin = np.ones_like(self.startInd)
         self.MLTmin = np.nan*np.ones_like(self.startInd)
+        self.startTime = np.nan*np.ones(len(self.startInd), dtype=object)
+        self.endTime = np.nan*np.ones(len(self.startInd), dtype=object)
+        self.minMLT = np.nan*np.ones_like(self.startInd)
 
         for ci, (si, ei) in enumerate(zip(self.startInd, self.endInd)):
             # get interpolated lat/lon/alt
             interpDict = self._interp_geo_pos(si-2, ei+2)
-            t0 = self.magA['dateTime'][self.startInd]
+            t0 = self.magA['dateTime'][si]
             footpointNA = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
             footpointSA = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
             footpointNB = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
             footpointSB = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
+
+            LA = np.nan*np.ones(len(interpDict['latA']), dtype=float)
+            LB = np.nan*np.ones(len(interpDict['latA']), dtype=float)
+            MLTA = np.nan*np.ones(len(interpDict['latA']), dtype=float)
+            MLTB = np.nan*np.ones(len(interpDict['latA']), dtype=float)
+
             # Run IRBEM find_foot_point()
             zA = zip(interpDict['dateTime'], interpDict['altA'], 
                     interpDict['latA'], interpDict['lonA'])
             for (i, (ti, alti, lati, loni)) in enumerate(zA):
-                #print(z)
+                # Get footprint params.
                 self.find_foot_point(
                     {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
                     {'Kp':self.getKp(t0)}, alt, 1)
@@ -243,6 +268,12 @@ class MagneticConjunctions(IRBEM.MagFields):
                     {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
                     {'Kp':self.getKp(t0)}, alt, -1)
                 footpointSA[i] = self.find_foot_point_output['XFOOT']
+                # Get L and MLT params
+                self.make_lstar(
+                    {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
+                    {'Kp':self.getKp(t0)})
+                LA[i] = self.make_lstar_output['Lm'][0]
+                MLTA[i] = self.make_lstar_output['MLT'][0]
 
             zB = zip(interpDict['dateTime'], interpDict['altB'], 
                     interpDict['latB'], interpDict['lonB'])
@@ -255,12 +286,23 @@ class MagneticConjunctions(IRBEM.MagFields):
                     {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
                     {'Kp':self.getKp(t0)}, alt, -1)
                 footpointSB[i] = self.find_foot_point_output['XFOOT']
+                # Get L and MLT params
+                self.make_lstar(
+                    {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
+                    {'Kp':self.getKp(t0)})
+                LB[i] = self.make_lstar_output['Lm'][0]
+                MLTB[i] = self.make_lstar_output['MLT'][0]
             
             # Calc the closst separation.
             dN = greatCircleDist(footpointNA, footpointNB)
             dS = greatCircleDist(footpointSA, footpointSB)
             self.dmin[ci] = np.min(np.stack((dN, dS)))
-        print(self.dmin)    
+
+            # Calculate start/stop times as well as dMLT at closest L
+            # shell separation.
+            self.startTime[ci], self.endTime[ci], self.minMLT[ci] = self._find_c_bounds(
+                interpDict['dateTime'], LA, MLTA, LB, MLTB
+                )   
         return
 
     def _interp_geo_pos(self, startInd, endInd):
@@ -292,7 +334,8 @@ class MagneticConjunctions(IRBEM.MagFields):
 
     def _interp_lon(self, tInterp, startInd, endInd):
         """
-
+        This method interpolates the longitude assuming that the 
+        spacecraft lon motion is westward.
         """
         lonA = self.magA['lon'][startInd:endInd].copy()
         lonB = self.magB['lon'][startInd:endInd].copy()
@@ -322,13 +365,41 @@ class MagneticConjunctions(IRBEM.MagFields):
             flonB[idx:] += 360
         return flonA, flonB
 
-    def getKp(self, t):
+    def _find_c_bounds(self, time, LA, MLTA, LB, MLTB):
+        """
+        This method will calculate the start/stop times of a conjunction,
+        as well as dMLT when the L shells are closest (usually near a 
+        crossing)
+        """
+        dL = np.abs(np.abs(LA)-np.abs(LB))
+        #print(LA, LB)
+        # Order does not matter since dmlt() does not distinguish sign.
+        dMLT = dmlt(MLTA, MLTB) 
+        validInd = np.where((dL < self.Lthresh) & (dMLT < self.MLTthresh))[0]
+        return time[validInd[0]].replace(tzinfo=None), time[validInd[-1]].replace(tzinfo=None), dMLT[int(np.argmin(dL))]
+
+    def getKp(self, t, default=20, kpDir='/home/mike/research/firebird/data_processing/geomag_indicies/indicies'):
         """
         This method will open up and append the kp indicies for the time range
         in the magEphem file. Given a time t, it will look for the correct kp.
         """
-        
-        return self.Kp
+        if not hasattr(self, 'kp'): # Load in the files first time this is called
+            years = sorted(set([t.year for t in self.magA['dateTime']]))
+            self.kp = {'dateTime':np.array([]), 'kp':np.array([])}
+            for year in years:
+                f = spacepy.datamodel.readJSONheadedASCII(os.path.join(kpDir, '{}_kp.txt'.format(year)))
+                self.kp['dateTime'] = np.append(self.kp['dateTime'], f['dateTime'])
+                self.kp['kp'] = np.append(self.kp['kp'], f['kp'])
+            # Convert time strings to datetime
+            self.kp['dateTime'] = np.array([dateutil.parser.parse(tt) for tt in self.kp['dateTime']])
+        # Now find the matching Kp
+        t = t.replace(hour=(t.hour - t.hour%3), minute=0, second=0, microsecond=0) # Convert to a multiple of 3 hrs.
+        idt = np.where(self.kp['dateTime'] == t)[0]
+
+        if len(idt) == 0:
+            print('WARNING: No kp value found at time {}. Returning default kp of {}'.format(t, default))
+            return 20
+        return self.kp['kp'][idt[0]]
 
 def greatCircleDist(X1, X2):
     """
@@ -373,6 +444,7 @@ if __name__ == '__main__':
 
     m = MagneticConjunctions(missionA, missionB,
         magA, magB)
-    m.calc_conjunctions()
+    m.calcConjunctions()
+    m.saveData('/home/mike/Desktop/test.csv')
     m.testPlots()
     plt.show()
