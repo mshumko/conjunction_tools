@@ -100,8 +100,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         # Calc where indicies are continous
         self.startInd, self.endInd = self._calc_start_stop(idC) 
         ### Interpolate L and MLT around the flagged conjunctions. ###
-        if interpP is None:
-            self._interp_geo_pos
+        #if interpP is None:
+            #self._interp_geo_pos()
         ### Calculate closest footpoint separation ###
 
         return
@@ -112,7 +112,10 @@ class MagneticConjunctions(IRBEM.MagFields):
         flagged for a conjunction.
         """
         for si, ei in zip(self.startInd, self.endInd):
-            fig, ax = plt.subplots(4, sharex=True, figsize=(6, 8))
+            # Interpolate
+            interpDict = self._interp_geo_pos(si-2, ei+2)
+
+            fig, ax = plt.subplots(5, sharex=True, figsize=(6, 8))
             ax[0].plot(self.magA['dateTime'][si-5:ei+5], self.dL[si-5:ei+5], 'r', label='dL')
             ax[0].plot(self.magA['dateTime'][si-5:ei+5], self.dMLT[si-5:ei+5], 'b', label='dMLT')
             ax[0].set_ylabel('dL ad dMLT')
@@ -123,12 +126,22 @@ class MagneticConjunctions(IRBEM.MagFields):
                      'b', label='{}'.format(self.missionB))
             ax[1].set_ylabel('L shell')
 
+            ax[-3].plot(self.magA['dateTime'][si-5:ei+5], self.magA['alt'][si-5:ei+5],'r')
+            ax[-3].plot(self.magA['dateTime'][si-5:ei+5], self.magB['alt'][si-5:ei+5],'b')
+            ax[-3].scatter(interpDict['dateTime'], interpDict['altA'])
+            ax[-3].scatter(interpDict['dateTime'], interpDict['altB'])
+            ax[-3].set_ylabel('Altitude [km]')
+
             ax[-2].plot(self.magA['dateTime'][si-5:ei+5], self.magA['lat'][si-5:ei+5],'r')
             ax[-2].plot(self.magA['dateTime'][si-5:ei+5], self.magB['lat'][si-5:ei+5],'b')
+            ax[-2].scatter(interpDict['dateTime'], interpDict['latA'])
+            ax[-2].scatter(interpDict['dateTime'], interpDict['latB'])
             ax[-2].set_ylabel('latitude [deg]')
 
             ax[-1].plot(self.magA['dateTime'][si-5:ei+5], self.magA['lon'][si-5:ei+5],'r')
             ax[-1].plot(self.magA['dateTime'][si-5:ei+5], self.magB['lon'][si-5:ei+5],'b')
+            ax[-1].scatter(interpDict['dateTime'], interpDict['lonA'])
+            ax[-1].scatter(interpDict['dateTime'], interpDict['lonB'])
             ax[-1].set_ylabel('longitude [deg]')
 
             for a in ax:
@@ -172,8 +185,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         self.tA = date2num(self.magA['dateTime'])
         self.tB = date2num(self.magB['dateTime'])
 
-        idTA = np.in1d(tA, tB) # Efficient way to calculate the same times
-        idTB = np.in1d(tB, tA) # between two data sets.
+        idTA = np.in1d(self.tA, self.tB) # Efficient way to calculate the same times
+        idTB = np.in1d(self.tB, self.tA) # between two data sets.
         
         for key in self.magA.keys(): # Filter data.
             self.magA[key] = self.magA[key][idTA]
@@ -196,20 +209,36 @@ class MagneticConjunctions(IRBEM.MagFields):
             endInd = np.append(endInd, ind[-1]+1)
         return startInd, endInd
 
-    def _interp_geo_pos(self, key, startInd, endInd):
+    def _interp_geo_pos(self, startInd, endInd):
         """
         This helper method interpolates the lat/lon/alt data. The longitude
         coordinate is treated separately.
         """
-        tInterp = np.linspace(self.tA[startInd], self.tA[endInd]) 
-        if 'lon' in key.lower():
-            pass
-        else:
-            fA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
-                self.magA[key][startInd:endInd], kind='cubic')
-            fB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
-                self.magB[key][startInd:endInd], kind='cubic')
-        return np.num2date(tInterp) fA(tInterp), fB(tInterp)
+        tInterp = np.linspace(self.tA[startInd], self.tA[endInd-1]) 
+        interpDict = {'t':tInterp}
+
+        flatA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
+            self.magA['lat'][startInd:endInd], kind='cubic')
+        flatB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
+            self.magB['lat'][startInd:endInd], kind='cubic')
+        faltA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
+            self.magA['alt'][startInd:endInd], kind='cubic')
+        faltB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
+            self.magB['alt'][startInd:endInd], kind='cubic')
+        interpDict['latA'] = flatA(tInterp)
+        interpDict['latB'] = flatB(tInterp)
+        interpDict['altA'] = faltA(tInterp)
+        interpDict['altB'] = faltB(tInterp)
+
+        # Be carefull with lons over the 180 degree boundary.
+        flonA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
+            self.magA['lon'][startInd:endInd], kind='cubic')
+        flonB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
+            self.magB['lon'][startInd:endInd], kind='cubic')
+        interpDict['lonA'] = flonA(tInterp)
+        interpDict['lonB'] = flonB(tInterp)
+        interpDict['dateTime'] = num2date(tInterp)
+        return interpDict
 
     
 
