@@ -13,6 +13,8 @@ import scipy
 
 import IRBEM
 
+Re=6371 # Earth radius km
+
 # This dictionary contains the magEphem L, MLT, lat, lon, alt, 
 # time keys for reading in the data. 
 keyDict = {
@@ -63,7 +65,7 @@ class MagneticConjunctions(IRBEM.MagFields):
 
         # Aux params
         self.REPLACE_ERROR_VALS = kwargs.get('REPLACE_ERROR_VALS', np.nan)
-        self.Kp = kwargs.get('Kp', 20) # For interplation.
+        self.Kp = kwargs.get('Kp', 20) # Deault kp for interplation.
 
         # Initializa IRBEM
         IRBEM.MagFields.__init__(self)
@@ -101,8 +103,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         self.startInd, self.endInd = self._calc_start_stop(idC) 
         ### Interpolate L and MLT around the flagged conjunctions. ###
         if interp:
-
-            interpDict = self._interp_geo_pos()
+            self._calc_d_dMLT_param()        
+            
         ### Calculate closest footpoint separation ###
 
         return
@@ -210,17 +212,55 @@ class MagneticConjunctions(IRBEM.MagFields):
             endInd = np.append(endInd, ind[-1]+1)
         return startInd, endInd
 
-    def _calc_d_dMLT_param(self, startInd, endInd, alt=500):
+    def _calc_d_dMLT_param(self, alt=500):
         """
         This method is a wrapper for the interpolation in lat/lon/alt
         coordinates. This method also calculates the smallest footprint
         separation at an altitude alt. Lastly, it calculates dMLT when 
         L shells cross.
         """
-        # get interpolated lat/lon/alt
-        interpDict = self._interp_geo_pos(startInd, endInd)
-        #Xa = 
-        fpotNA = self.find_foot_point(X, {'Kp':self.Kp})
+        self.dmin = 1E31*np.ones_like(self.startInd)
+        self.MLTmin = np.nan*np.ones_like(self.startInd)
+
+        for ci, (si, ei) in enumerate(zip(self.startInd, self.endInd)):
+            # get interpolated lat/lon/alt
+            interpDict = self._interp_geo_pos(si-2, ei+2)
+            t0 = self.magA['dateTime'][self.startInd]
+            footpointNA = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
+            footpointSA = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
+            footpointNB = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
+            footpointSB = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
+            # Run IRBEM find_foot_point()
+            zA = zip(interpDict['dateTime'], interpDict['altA'], 
+                    interpDict['latA'], interpDict['lonA'])
+            for (i, (ti, alti, lati, loni)) in enumerate(zA):
+                #print(z)
+                self.find_foot_point(
+                    {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
+                    {'Kp':self.getKp(t0)}, alt, 1)
+                footpointNA[i] = self.find_foot_point_output['XFOOT']
+                self.find_foot_point(
+                    {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
+                    {'Kp':self.getKp(t0)}, alt, -1)
+                footpointSA[i] = self.find_foot_point_output['XFOOT']
+
+            zB = zip(interpDict['dateTime'], interpDict['altB'], 
+                    interpDict['latB'], interpDict['lonB'])
+            for (i, (ti, alti, lati, loni)) in enumerate(zB):
+                self.find_foot_point(
+                    {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
+                    {'Kp':self.getKp(t0)}, alt, 1)
+                footpointNB[i] = self.find_foot_point_output['XFOOT']
+                self.find_foot_point(
+                    {'dateTime':ti, 'x1':alti, 'x2':lati, 'x3':loni}, 
+                    {'Kp':self.getKp(t0)}, alt, -1)
+                footpointSB[i] = self.find_foot_point_output['XFOOT']
+            
+            # Calc the closst separation.
+            dN = greatCircleDist(footpointNA, footpointNB)
+            dS = greatCircleDist(footpointSA, footpointSB)
+            self.dmin[ci] = np.min(np.stack((dN, dS)))
+        print(self.dmin)    
         return
 
     def _interp_geo_pos(self, startInd, endInd):
@@ -282,6 +322,24 @@ class MagneticConjunctions(IRBEM.MagFields):
             flonB[idx:] += 360
         return flonA, flonB
 
+    def getKp(self, t):
+        """
+        This method will open up and append the kp indicies for the time range
+        in the magEphem file. Given a time t, it will look for the correct kp.
+        """
+        
+        return self.Kp
+
+def greatCircleDist(X1, X2):
+    """
+    X1 and X2 must be N*3 array of lat, lon, alt. phi = lat, lambda = lon
+    """ 
+    X1 = np.asarray(X1)
+    X2 = np.asarray(X2)
+    R = (Re+(X1[:, 0]+X2[:, 0])/2)
+    s = 2*np.arcsin( np.sqrt( np.sin(np.deg2rad(X1[:, 1]-X2[:, 1])/2)**2 + np.cos(np.deg2rad(X1[:, 1]))*np.cos(np.deg2rad(X2[:, 1]))*np.sin(np.deg2rad(X1[:, 2]-X2[:, 2])/2)**2 ))
+    return R*s
+
 def dmlt(a, b):
     """
     NAME:    dmlt(a, b)
@@ -315,6 +373,6 @@ if __name__ == '__main__':
 
     m = MagneticConjunctions(missionA, missionB,
         magA, magB)
-    m.calc_conjunctions(interpP=())
+    m.calc_conjunctions()
     m.testPlots()
     plt.show()
