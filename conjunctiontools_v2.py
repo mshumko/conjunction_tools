@@ -55,7 +55,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         MOD:     2018-4-8
         """
         # Basic conjunction params
-        self.lowerL = kwargs.get('lowerL', 1)
+        self.lowerL = kwargs.get('lowerL', 3)
         self.Lthresh = kwargs.get('Lthresh', 1)
         self.MLTthresh = kwargs.get('MLTthresh', 1)
         self.missionA = missionA
@@ -100,7 +100,10 @@ class MagneticConjunctions(IRBEM.MagFields):
         self.dMLT = dmlt(self.magA['MLT'], self.magB['MLT'])
 
         # Calc indicies where separation meets conjunction criteria.
-        idC = np.where((self.dL < self.Lthresh) & (self.dMLT < self.MLTthresh))[0]
+        idC = np.where((self.dL < self.Lthresh) & 
+                        (self.dMLT < self.MLTthresh) &
+                        (self.magA['L'] > self.lowerL) & 
+                        (self.magB['L'] > self.lowerL))[0]
         # Calc where indicies are continous
         self.startInd, self.endInd = self._calc_start_stop(idC) 
         ### Interpolate L and MLT around the flagged conjunctions. ###
