@@ -16,10 +16,10 @@ FDIR = '/home/mike/research/conjunction-tools/2018_04_predicted_ephem'
 
 for fb_id in [3, 4]:
     for rb_id in ['A', 'B']:
-        FNAME_A = ('FU{}_2018-04-18_2018-05-31_magephem_pre.txt'.format(fb_id))
-        FNAME_B = ('rbsp{}_2018-04-18_2018-05-31_magephem_pre.txt'.format(
+        FNAME_A = ('FU{}_2018-04-19_2018-05-14_magephem_def.txt'.format(fb_id))
+        FNAME_B = ('rbsp{}_magephem_def.txt'.format(
                     rb_id.lower()))
-        SAVE_NAME = ('FU{}_RBSP{}_camp15_conjunctions_pre.txt'.format(
+        SAVE_NAME = ('FU{}_RBSP{}_camp15_conjunctions_def.txt'.format(
                     fb_id, rb_id))
 
         cCalc = conjunctiontools.MagneticConjunctionCalc(
