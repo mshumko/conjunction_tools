@@ -114,15 +114,20 @@ class MagneticConjunctions(IRBEM.MagFields):
             raise NotImplementedError('Simple non-interp mode not implemented.')
         return
 
-    def saveData(self, sPath):
+    def saveData(self, sPath, mode='a'):
         """
         This method saves the conjunction data to a csv file.
         """
-        saveData = np.stack((self.startTime, self.endTime, self.dmin, self.minMLT), axis=1)
-        with open(sPath, 'w', newline='') as f:
+        saveData = np.stack((self.startTime, self.endTime, 
+                            self.meanL, self.meanMLT, self.dmin, 
+                            self.minMLT), axis=1)
+        exists = os.path.exists(sPath)
+        with open(sPath, mode, newline='') as f:
             w = csv.writer(f)
             # Save header
-            w.writerow(['startTime', 'endTime', 'minD [km]', 'minMLT'])
+            if not exists: # If the file is newly generated, write the header.
+                w.writerow(['startTime', 'endTime', 'meanL', 
+                            'meanMLT', 'minD [km]', 'minMLT'])
             w.writerows(saveData)
         return
 
@@ -243,6 +248,8 @@ class MagneticConjunctions(IRBEM.MagFields):
         self.startTime = np.nan*np.ones(len(self.startInd), dtype=object)
         self.endTime = np.nan*np.ones(len(self.startInd), dtype=object)
         self.minMLT = np.nan*np.ones_like(self.startInd)
+        self.meanMLT = np.nan*np.ones_like(self.startInd)
+        self.meanL = np.nan*np.ones_like(self.startInd)
 
         for ci, (si, ei) in enumerate(zip(self.startInd, self.endInd)):
             # get interpolated lat/lon/alt
@@ -309,9 +316,13 @@ class MagneticConjunctions(IRBEM.MagFields):
                     raise
             # Calculate start/stop times as well as dMLT at closest L
             # shell separation.
-            self.startTime[ci], self.endTime[ci], self.minMLT[ci] = self._find_c_bounds(
+            self.startTime[ci], self.endTime[ci], self.minMLT[ci], idx = self._find_c_bounds(
                 interpDict['dateTime'], LA, MLTA, LB, MLTB
                 )   
+            # Save mean values of L and MLT at the closest approach.
+            self.meanL[ci] = 0.5*(np.abs(LA[idx]) + np.abs(LB[idx]))
+            print(LA[idx], LB[idx])
+            self.meanMLT[ci] = 0.5*(MLTA[idx] + MLTB[idx])
         return
 
     def _interp_geo_pos(self, startInd, endInd):
@@ -378,14 +389,15 @@ class MagneticConjunctions(IRBEM.MagFields):
         """
         This method will calculate the start/stop times of a conjunction,
         as well as dMLT when the L shells are closest (usually near a 
-        crossing)
+        crossing). Lastly, it returns the index of the LA/LB/MLTA/MLTB 
+        arrays during closest approach. 
         """
         dL = np.abs(np.abs(LA)-np.abs(LB))
         #print(LA, LB)
         # Order does not matter since dmlt() does not distinguish sign.
         dMLT = dmlt(MLTA, MLTB) 
         validInd = np.where((dL < self.Lthresh) & (dMLT < self.MLTthresh))[0]
-        return time[validInd[0]].replace(tzinfo=None), time[validInd[-1]].replace(tzinfo=None), dMLT[int(np.argmin(dL))]
+        return time[validInd[0]].replace(tzinfo=None), time[validInd[-1]].replace(tzinfo=None), dMLT[int(np.argmin(dL))], int(np.argmin(dL))
 
     def getKp(self, t, default=20, kpDir='/home/mike/research/firebird/data_processing/geomag_indicies/indicies'):
         """
