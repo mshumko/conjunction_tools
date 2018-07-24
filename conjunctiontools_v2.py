@@ -321,7 +321,6 @@ class MagneticConjunctions(IRBEM.MagFields):
                 )   
             # Save mean values of L and MLT at the closest approach.
             self.meanL[ci] = 0.5*(np.abs(LA[idx]) + np.abs(LB[idx]))
-            print(LA[idx], LB[idx])
             self.meanMLT[ci] = 0.5*(MLTA[idx] + MLTB[idx])
         return
 

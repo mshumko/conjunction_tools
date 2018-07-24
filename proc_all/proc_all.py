@@ -7,17 +7,28 @@ import glob
 sys.path.insert(0, '/home/mike/research/conjunction-tools/')
 import conjunctiontools_v2
 
-fb_dir = lambda sc: '/home/mike/research/firebird/Datafiles/FU_{}/ephem/'.format(sc)
-rbsp_dir = '/home/mike/research/conjunction-tools/proc_all/rbsp_camp_ephem/'
+baseDir = '/home/mike/research/conjunction-tools/proc_all'
+fb_dir = os.path.join(baseDir, 'firebird_camp_magephem')
+rbsp_dir = os.path.join(baseDir, 'rbsp_camp_magephem')
+
+mission = 'FIREBIRD'
 
 for fb_id in [3]:
     for rb_id in ['a']:
-        for camp in range(1, 11):
-            # Find matching files
-            fbFiles = glob.glob(os.path.join(fb_dir(fb_id), 'FU{}*camp{:02d}*'.format(fb_id, camp)))
-            assert len(fbFiles) == 1, '0 or multiple FIREBIRD ephem files found!'
+        # Find the mission files.
+        fbFiles = sorted(glob.glob(
+                    os.path.join(fb_dir, 'FU{}_camp*'.format(fb_id))
+                    ))
+        rbFiles = sorted(glob.glob(
+                    os.path.join(rbsp_dir, 'rbsp{}_camp*'.format(rb_id))
+                    ))
 
-            rbFiles = glob.glob(os.path.join(rbsp_dir, 'rbsp{}*camp{:02d}*'.format(rb_id, camp)))
-            assert len(rbFiles) == 1, '0 or multiple RBSP ephem files found!'
+        for fb_f, rb_f in zip(fbFiles, rbFiles):
+            print('Processing files {} and {}'.format(
+                os.path.basename(fb_f), (os.path.basename(rb_f))))
 
-            # Map file to magnetic coordinates.
+            m = conjunctiontools_v2.MagneticConjunctions(
+                mission, mission, fb_f, rb_f)
+            m.calcConjunctions()
+            m.saveData('/home/mike/Desktop/test.csv')
+           
