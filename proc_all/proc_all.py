@@ -10,8 +10,9 @@ import conjunctiontools_v2
 baseDir = '/home/mike/research/conjunction-tools/proc_all'
 fb_dir = os.path.join(baseDir, 'firebird_camp_magephem')
 rbsp_dir = os.path.join(baseDir, 'rbsp_camp_magephem')
-
 mission = 'FIREBIRD'
+dL = 1
+dMLT = 1
 
 for fb_id in [3]:
     for rb_id in ['a']:
@@ -28,7 +29,10 @@ for fb_id in [3]:
                 os.path.basename(fb_f), (os.path.basename(rb_f))))
 
             m = conjunctiontools_v2.MagneticConjunctions(
-                mission, mission, fb_f, rb_f)
+                mission, mission, fb_f, rb_f, Lthresh=dL, MLTthresh=dMLT)
             m.calcConjunctions()
-            m.saveData('/home/mike/Desktop/test.csv')
+            m.saveData(os.path.join(baseDir, 'conjunctions', 
+                'FU{}_RBSP{}_conjunctions_dL{}_dMLT{}.txt'.format(
+                    fb_id, rb_id.upper(), int(10*dL), int(10*dMLT) )
+                ))
            

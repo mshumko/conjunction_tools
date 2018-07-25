@@ -253,7 +253,9 @@ class MagneticConjunctions(IRBEM.MagFields):
 
         for ci, (si, ei) in enumerate(zip(self.startInd, self.endInd)):
             # get interpolated lat/lon/alt
-            interpDict = self._interp_geo_pos(si-2, ei+2)
+            interpDict = self._interp_geo_pos(si-2, ei+2) # Expand to interpolate
+            if interpDict == -1:
+                return
             t0 = self.magA['dateTime'][si]
             footpointNA = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
             footpointSA = np.nan*np.ones((len(interpDict['latA']), 3), dtype=float)
@@ -329,7 +331,15 @@ class MagneticConjunctions(IRBEM.MagFields):
         This helper method interpolates the lat/lon/alt data. The longitude
         coordinate is treated separately.
         """
-        tInterp = np.linspace(self.tA[startInd], self.tA[endInd-1]) 
+        try:
+            tInterp = np.linspace(self.tA[startInd], self.tA[endInd-1]) 
+        except IndexError as err:
+            if 'is out of bounds for axis' in str(err):
+                # Small chance that the end time conjunction index is at 
+                # the end of the data set.
+                return -1
+            else:
+                raise
         interpDict = {'t':tInterp}
 
         flatA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
