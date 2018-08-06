@@ -119,15 +119,18 @@ class MagneticConjunctions(IRBEM.MagFields):
         This method saves the conjunction data to a csv file.
         """
         saveData = np.stack((self.startTime, self.endTime, 
-                            self.meanL, self.meanMLT, self.dmin, 
-                            self.minMLT), axis=1)
+                            self.meanL, self.meanMLT, self.minMLT, 
+                            self.dmin), axis=1)
+        # Delete rows with error values that are -1
+        invalidRows = np.where(saveData[:, 0] == -1)[0]
+        saveData = np.delete(saveData, invalidRows, axis=0)
         exists = os.path.exists(sPath)
         with open(sPath, mode, newline='') as f:
             w = csv.writer(f)
             # Save header
             if not exists: # If the file is newly generated, write the header.
                 w.writerow(['startTime', 'endTime', 'meanL', 
-                            'meanMLT', 'minD [km]', 'minMLT'])
+                            'meanMLT', 'minMLT', 'minD [km]'])
             w.writerows(saveData)
         return
 
@@ -236,7 +239,7 @@ class MagneticConjunctions(IRBEM.MagFields):
             endInd = np.append(endInd, ind[-1]+1)
         return startInd, endInd
 
-    def _calc_d_dMLT_param(self, alt=500):
+    def _calc_d_dMLT_param(self, alt=500, interpOffset=2):
         """
         This method is a wrapper for the interpolation in lat/lon/alt
         coordinates. This method also calculates the smallest footprint
@@ -253,7 +256,10 @@ class MagneticConjunctions(IRBEM.MagFields):
 
         for ci, (si, ei) in enumerate(zip(self.startInd, self.endInd)):
             # get interpolated lat/lon/alt
-            interpDict = self._interp_geo_pos(si-2, ei+2) # Expand to interpolate
+            if si < interpOffset: # If a conjunction starts at the start of file (rare but happens)
+                si = interpOffset
+                ei += interpOffset
+            interpDict = self._interp_geo_pos(si-interpOffset, ei+interpOffset) # Expand to interpolate
             if interpDict == -1:
                 return
             t0 = self.magA['dateTime'][si]
@@ -323,7 +329,12 @@ class MagneticConjunctions(IRBEM.MagFields):
                 )   
             # Save mean values of L and MLT at the closest approach.
             self.meanL[ci] = 0.5*(np.abs(LA[idx]) + np.abs(LB[idx]))
-            self.meanMLT[ci] = 0.5*(MLTA[idx] + MLTB[idx])
+            meanMLT = np.arctan2(np.sin(MLTA[idx]*2*np.pi/24), np.cos(MLTB[idx]*2*np.pi/24))
+            if meanMLT > 0:
+                self.meanMLT[ci] = meanMLT
+            else:
+                self.meanMLT[ci] = 24+meanMLT
+            #self.meanMLT[ci] = 0.5*(MLTA[idx] + MLTB[idx])
         return
 
     def _interp_geo_pos(self, startInd, endInd):
@@ -341,7 +352,6 @@ class MagneticConjunctions(IRBEM.MagFields):
             else:
                 raise
         interpDict = {'t':tInterp}
-
         flatA = scipy.interpolate.interp1d(self.tA[startInd:endInd],
             self.magA['lat'][startInd:endInd], kind='cubic')
         flatB = scipy.interpolate.interp1d(self.tB[startInd:endInd],
@@ -406,7 +416,14 @@ class MagneticConjunctions(IRBEM.MagFields):
         # Order does not matter since dmlt() does not distinguish sign.
         dMLT = dmlt(MLTA, MLTB) 
         validInd = np.where((dL < self.Lthresh) & (dMLT < self.MLTthresh))[0]
-        return time[validInd[0]].replace(tzinfo=None), time[validInd[-1]].replace(tzinfo=None), dMLT[int(np.argmin(dL))], int(np.argmin(dL))
+        # If the flagged conjunction was not really a conjunction when interpolated
+        if len(validInd) == 0:
+            return (-1, -1, -1, -1)
+        startTime = time[validInd[0]].replace(tzinfo=None)
+        endTime = time[validInd[-1]].replace(tzinfo=None)
+        minMLT = dMLT[int(np.argmin(dL))]
+        idx = int(np.argmin(dL))
+        return startTime, endTime, minMLT, idx
 
     def getKp(self, t, default=20, kpDir='/home/mike/research/firebird/data_processing/geomag_indicies/indicies'):
         """

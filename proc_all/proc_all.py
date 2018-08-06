@@ -14,8 +14,8 @@ mission = 'FIREBIRD'
 dL = 1
 dMLT = 1
 
-for fb_id in [3]:
-    for rb_id in ['a']:
+for fb_id in [3, 4]:
+    for rb_id in ['a', 'b']:
         # Find the mission files.
         fbFiles = sorted(glob.glob(
                     os.path.join(fb_dir, 'FU{}_camp*'.format(fb_id))
@@ -35,4 +35,3 @@ for fb_id in [3]:
                 'FU{}_RBSP{}_conjunctions_dL{}_dMLT{}.txt'.format(
                     fb_id, rb_id.upper(), int(10*dL), int(10*dMLT) )
                 ))
-           
