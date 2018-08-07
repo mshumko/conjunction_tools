@@ -92,7 +92,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             try:        
                 self.plotEMFISIS(self.rbsp_id, tBounds, ax[-3])
             except AssertionError as err:
-                if 'multiple WFR files found!' in str(err):
+                if ('multiple WFR files found!' in str(err) or 
+                    'none or multiple magnetic ephemeris files found!' in str(err)):
                     continue
                 else:
                     raise
@@ -252,7 +253,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         return
     
 if __name__ == '__main__':
-    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/2018_03_predicted_ephem')
+    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/2018_04_predicted_ephem')
     for rb_id in ['A', 'B']:
         for fb_id in [3, 4]:
             print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
@@ -261,6 +262,6 @@ if __name__ == '__main__':
 
             # Run summary plot generator.
             cPlt = FIREBIRD_RBSP_Conjunction_Plots(
-                rb_id, fb_id, plot_empty_data=False)
+                rb_id, fb_id, plot_empty_data=True)
             cPlt.readConjunctionData(paths[0])
             cPlt.generatePlots(saveImg=True)

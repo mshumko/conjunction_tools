@@ -610,6 +610,25 @@ class MagneticConjunctionCalc:
         if self.verbose: print('Data reduced for 1-to-1 comparison.')
         return 
 
+    def interpConjunction(self, interpT=1, alt=500):
+        """
+        NAME:    interpConjunction(self)
+        USE:     This method interpolates the L and MLT coordinates for both
+                 spacecraft for the time interval given, and it calculates the
+                 smallest dMLT at the L shell crossing, and the minimum 
+                 footpoint separation at alt using OP Quiet, and will hopefully
+                 implement newer magnetic field models.
+        INPUT:   ARGS: None
+                 KWARGS: 
+                    interpT=1: The second cadence to interpolate to.
+                    alt=500:   End of field line tracing altitude with IRBEM.
+        RETURNS: dMLT at L shell crossing, and min footpoint distance 
+        AUTHOR:  Mykhaylo Shumko
+        MOD:     2018-03-24
+        """
+
+        return
+
 def dmlt(a, b):
     """
     NAME:    dmlt(a, b)
@@ -674,7 +693,8 @@ if __name__ == '__main__':
     cCalc.periodic_data_indicies() 
     cCalc.calc_magnetic_seperation()
     cCalc.calc_L_MLT_conjunction_delay(0)
-    cCalc.lower_L_bound()
+    print(cCalc.ind)
+    # cCalc.lower_L_bound()
 
-    cCalc.calc_conjunction_duration()
-    cCalc.plotLMLTandDLDMLT()
+    # cCalc.calc_conjunction_duration()
+    # cCalc.plotLMLTandDLDMLT()
