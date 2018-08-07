@@ -25,7 +25,8 @@ class ConjunctionHRfilter:
                 'FU_{}/hires/level2'.format(self.fb_id[-1]))
         
         # Load conjunction file
-        self._load_conjunction_file(cPath)
+        self.cPath = cPath
+        self._load_conjunction_file(self.cPath)
         # Get list and dates of all HiRes files
         self._get_hr_paths()
         return
@@ -61,7 +62,32 @@ class ConjunctionHRfilter:
                     self.fltConjunctions[key] = np.append(
                         self.fltConjunctions[key], 
                         self.cData[key][i])
-                
+        return
+        
+    def saveConjunctions(self, cDir=None, cName=None):
+        """
+        This method saves the filtered conjucntion list
+        in a csv format. If cDir and cName are None,
+        the default saving location is in the same 
+        directory, and the filename will have a "hr"
+        appended to the end.
+        """
+        
+        if (cDir is None) and (cName is None):
+            # Create generic save path
+            splitPath = self.cPath.split('.')
+            splitPath[0] += '_hr'
+            savePath = '.'.join(splitPath)
+        else:
+            savePath = os.path.join(cDir, cName)
+        print('Saving filtered conjunctions to:\n', savePath)
+            
+        # Save data
+        with open(savePath, 'w') as f:
+            w = csv.writer(f)
+            w.writerow(self.cKeys)
+            w.writerows(zip(*[self.fltConjunctions[key] 
+                for key in self.cKeys]))
         return
         
     def _get_hr_paths(self):
@@ -120,6 +146,7 @@ cPaths = glob.glob(os.path.join(CONJUNCTION_DIR, '*.txt'))
 for f in cPaths:
     c = ConjunctionHRfilter(f, HIRES_DIR)
     c.filterConjunctions()
+    c.saveConjunctions()
     
     
         
