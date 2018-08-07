@@ -144,6 +144,8 @@ class ConjunctionHRfilter:
 cPaths = glob.glob(os.path.join(CONJUNCTION_DIR, '*.txt'))
 
 for f in cPaths:
+    if ('camp' in f) or ('hr' in f):
+        continue
     c = ConjunctionHRfilter(f, HIRES_DIR)
     c.filterConjunctions()
     c.saveConjunctions()

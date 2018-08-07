@@ -12,7 +12,7 @@ fb_dir = os.path.join(baseDir, 'firebird_camp_magephem')
 rbsp_dir = os.path.join(baseDir, 'rbsp_camp_magephem')
 mission = 'FIREBIRD'
 dL = 1
-dMLT = 1
+dMLT = 0.5
 
 for fb_id in [3, 4]:
     for rb_id in ['a', 'b']:
