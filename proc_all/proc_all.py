@@ -3,6 +3,7 @@
 import os
 import sys
 import glob
+import itertools
 
 sys.path.insert(0, '/home/mike/research/conjunction-tools/')
 import conjunctiontools_v2
@@ -14,8 +15,13 @@ mission = 'FIREBIRD'
 dL = 1
 dMLT = 0.5
 
-for fb_id in [3, 4]:
-    for rb_id in ['a', 'b']:
+dLArr = [1, 1, 0.5]
+dMLTArr = [1, 0.5, 0.5]
+
+for dL, dMLT in zip(dLArr, dMLTArr):
+    for fb_id, rb_id in itertools.product([3, 4], ['a', 'b']):
+#for fb_id in [3, 4]:
+#    for rb_id in ['a', 'b']:
         # Find the mission files.
         fbFiles = sorted(glob.glob(
                     os.path.join(fb_dir, 'FU{}_camp*'.format(fb_id))

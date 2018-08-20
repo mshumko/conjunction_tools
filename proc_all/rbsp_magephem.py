@@ -13,10 +13,10 @@ import make_magnetic_ephemeris
 inDir = '/home/mike/research/conjunction-tools/proc_all/rbsp_camp_ephem'
 outDir = '/home/mike/research/conjunction-tools/proc_all/rbsp_camp_magephem'
 # If none, will look for existing kp in data. Change to a number when forward propagating!
-singleKp = 20 
+singleKp = 20
 
 overwrite = False # Flag to overwrite any magephem files already generated
-inPaths = sorted(glob.glob(os.path.join(inDir, '*')))
+inPaths = sorted(glob.glob(os.path.join(inDir, '*.txt')))
 
 # Now get a list of outFiles (magephem files to save to).
 inBasename = [os.path.basename(f) for f in inPaths]
