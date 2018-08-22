@@ -7,6 +7,7 @@ from matplotlib import dates
 import matplotlib.gridspec as gridspec
 import multiprocessing
 import dateutil.parser
+import csv
 
 import spacepy.datamodel
 
@@ -35,12 +36,30 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             print('Created directory: {}'.format(self.saveDir))
         return
             
-    def readConjunctionData(self, path, dL=1, dMLT=1): 
+    def readJSONConjunctionData(self, path): 
         """
         This function reads in the conjunction data. 
         """
         # Read in the conjunction data
         self.cData = spacepy.datamodel.readJSONheadedASCII(path)
+            
+        # Convert conjunction times to datetime objects
+        for key in ['startTime', 'endTime']:
+            self.cData[key] = np.array(
+                list(map(dateutil.parser.parse, self.cData[key])))
+        return
+    
+    def readCSVConjunctionData(self, path): 
+        """
+        This function reads in the conjunction data. 
+        """
+        # Read in the conjunction data
+        with open(path, 'r') as f:
+            r = csv.reader(f)
+            self.keys = next(r)
+            self.data = np.array(list(r))
+        self.cData = {key:np.array(self.data[:, i]) for 
+                    i, key in enumerate(self.keys)}
             
         # Convert conjunction times to datetime objects
         for key in ['startTime', 'endTime']:
@@ -143,6 +162,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 saveName = '{}_FU{}_RBSP{}_conjunction'.format(
                     datetimeStr, self.fb_id, self.rbsp_id)
                 self.saveFig(saveName=saveName, saveType=saveType)
+            else:
+                plt.show()
             for a in ax: # Clear subplots
                 a.cla()
         return
@@ -253,15 +274,31 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         return
     
 if __name__ == '__main__':
-    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/2018_04_predicted_ephem')
+    # CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/2018_04_predicted_ephem')
+    # for rb_id in ['A', 'B']:
+    #     for fb_id in [3, 4]:
+    #         print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
+    #         paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
+    #         assert len(paths) == 1, 'None or multiple conjunction files found!'
+
+    #         # Run summary plot generator.
+    #         cPlt = FIREBIRD_RBSP_Conjunction_Plots(
+    #             rb_id, fb_id, plot_empty_data=True)
+    #         cPlt.readCSVConjunctionData(paths[0])
+    #         cPlt.generatePlots(saveImg=False)
+    dL = 1
+    dMLT = 1
+    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/proc_all/conjunctions')
     for rb_id in ['A', 'B']:
         for fb_id in [3, 4]:
             print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
-            paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
+            paths = glob.glob('{}/FU{}_RBSP{}_conjunctions_dL{}_dMLT{}_hr.txt'.format(
+                                CONJUNCTION_DIR, fb_id, rb_id, int(dL*10), int(dMLT*10)))
             assert len(paths) == 1, 'None or multiple conjunction files found!'
+            print('Loading file:', paths[0])
 
             # Run summary plot generator.
             cPlt = FIREBIRD_RBSP_Conjunction_Plots(
                 rb_id, fb_id, plot_empty_data=True)
-            cPlt.readConjunctionData(paths[0])
+            cPlt.readCSVConjunctionData(paths[0])
             cPlt.generatePlots(saveImg=True)
