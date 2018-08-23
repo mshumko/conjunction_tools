@@ -94,8 +94,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                 self.fb_id, self.rbsp_id,
                 st.isoformat(), et.isoformat()))
             # Widen the time bounds a little.
-            tBounds = [st - self.tPad, 
-                et + self.tPad]
+            tBounds = [st - 2*self.tPad, 
+                et + 2*self.tPad]
             
             if pltMagEIS:
                 # Plot RBSP (If no data is found, move on to next conjunction)
@@ -110,9 +110,14 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             # Try except block to keep the script from crashing if no EMFISIS data is found.
             try:        
                 self.plotEMFISIS(self.rbsp_id, tBounds, ax[-3])
-            except AssertionError as err:
+            except (AssertionError, spacepy.pycdf.CDFError) as err:
                 if ('multiple WFR files found!' in str(err) or 
                     'none or multiple magnetic ephemeris files found!' in str(err)):
+                    continue
+                if 'Read failed - error from file system.' in str(err):
+                    print('WARNING: MagEphem file not found. Skiping plot')
+                    for a in ax: # Clear subplots
+                        a.cla()
                     continue
                 else:
                     raise
@@ -150,7 +155,8 @@ class FIREBIRD_RBSP_Conjunction_Plots:
             ax[-3].set_ylabel('EMFISIS WFR (Hz)')
             ax[0].set(title='FU{} RBSP{} conjunction {}'.format(
                 self.fb_id, self.rbsp_id, st))
-            ax[0].set_xlim(tBounds)
+            ax[0].set_xlim(st - self.tPad, 
+                et + self.tPad)
             #for a in ax[0:3]:
             #    a.set_ylim(bottom=lowMagEISFlux)
 
