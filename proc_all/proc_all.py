@@ -24,10 +24,10 @@ for dL, dMLT in zip(dLArr, dMLTArr):
 #    for rb_id in ['a', 'b']:
         # Find the mission files.
         fbFiles = sorted(glob.glob(
-                    os.path.join(fb_dir, 'FU{}_camp*'.format(fb_id))
+                    os.path.join(fb_dir, 'FU{}_camp17*'.format(fb_id))
                     ))
         rbFiles = sorted(glob.glob(
-                    os.path.join(rbsp_dir, 'rbsp{}_camp*'.format(rb_id))
+                    os.path.join(rbsp_dir, 'rbsp{}_camp17*'.format(rb_id))
                     ))
 
         for fb_f, rb_f in zip(fbFiles, rbFiles):
@@ -38,6 +38,6 @@ for dL, dMLT in zip(dLArr, dMLTArr):
                 mission, mission, fb_f, rb_f, Lthresh=dL, MLTthresh=dMLT)
             m.calcConjunctions()
             m.saveData(os.path.join(baseDir, 'conjunctions', 
-                'FU{}_RBSP{}_conjunctions_dL{}_dMLT{}.txt'.format(
+                'FU{}_RBSP{}_camp17__conjunctions_dL{}_dMLT{}.txt'.format(
                     fb_id, rb_id.upper(), int(10*dL), int(10*dMLT) )
-                ))
+                ), mode='w')
