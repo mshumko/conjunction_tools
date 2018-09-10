@@ -12,10 +12,10 @@ import make_magnetic_ephemeris
 inDir = '/home/mike/research/firebird/Datafiles/'
 outDir = '/home/mike/research/conjunction-tools/proc_all/'
 # If none, will look for existing kp in data. Change to a number when forward propagating!
-singleKp = None 
+singleKp = 20 
 
 overwrite = False # Flag to overwrite any magephem files already generated
-inPaths = sorted(glob.glob(os.path.join(inDir, '**/*LLA_camp17*'), recursive=True))
+inPaths = sorted(glob.glob(os.path.join(inDir, '**/*LLA_camp18*'), recursive=True))
 
 # Now get a list of outFiles (magephem files to save to).
 inBasename = [os.path.basename(f) for f in inPaths]
