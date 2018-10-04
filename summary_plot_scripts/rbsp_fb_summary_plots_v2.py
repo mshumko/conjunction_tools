@@ -26,6 +26,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         self.fb_id = fb_id
         self.plot_empty_data = kwargs.get('plot_empty_data', True)
         self.tPad = kwargs.get('tPad', timedelta(minutes = 2))
+        self.Bmodel = kwargs.get('Bmodel', 'T89D')
         self.fb_dir = ('/home/mike/research/firebird/'
             'Datafiles/FU_{}/hires/level2'.format(self.fb_id))
         self.saveDir = kwargs.get('saveDir', 
@@ -208,7 +209,7 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         pObj = plot_emfisis_spectra.EMFISISspectra(sc_id, tBounds[0],
             tBounds=tBounds)
         pObj.loadWFRSpectra()
-        pObj.loadMagEphem()
+        pObj.loadMagEphem(Bmodel=self.Bmodel)
         self.magEphem = pObj.magEphem
         pObj.plotSpectra(ax=zx, plotCb=False, grid=False, 
             legendLoc=False)
@@ -280,31 +281,34 @@ class FIREBIRD_RBSP_Conjunction_Plots:
         return
     
 if __name__ == '__main__':
-    # CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/2018_04_predicted_ephem')
+    dL = 1
+    dMLT = 1
+    
+    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/proc_all/conjunctions')
+    for rb_id in ['A', 'B']:
+        for fb_id in [3, 4]:
+            print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
+            paths = glob.glob('{}/FU{}_RBSP{}_camp17*dL{}_dMLT{}*'.format(CONJUNCTION_DIR, fb_id, rb_id, 10*dL, 10*dMLT))
+            assert len(paths) == 1, 'None or multiple conjunction files found!'
+
+            # Run summary plot generator.
+            cPlt = FIREBIRD_RBSP_Conjunction_Plots(
+                rb_id, fb_id, plot_empty_data=False, Bmodel='T89Q')
+            cPlt.readCSVConjunctionData(paths[0])
+            cPlt.generatePlots(saveImg=True)
+    # dL = 1
+    # dMLT = 1
+    # CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/proc_all/conjunctions')
     # for rb_id in ['A', 'B']:
     #     for fb_id in [3, 4]:
     #         print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
-    #         paths = glob.glob('{}/FU{}_RBSP{}*'.format(CONJUNCTION_DIR, fb_id, rb_id))
+    #         paths = glob.glob('{}/FU{}_RBSP{}_conjunctions_dL{}_dMLT{}_hr.txt'.format(
+    #                             CONJUNCTION_DIR, fb_id, rb_id, int(dL*10), int(dMLT*10)))
     #         assert len(paths) == 1, 'None or multiple conjunction files found!'
+    #         print('Loading file:', paths[0])
 
     #         # Run summary plot generator.
     #         cPlt = FIREBIRD_RBSP_Conjunction_Plots(
     #             rb_id, fb_id, plot_empty_data=True)
     #         cPlt.readCSVConjunctionData(paths[0])
-    #         cPlt.generatePlots(saveImg=False)
-    dL = 1
-    dMLT = 1
-    CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools/proc_all/conjunctions')
-    for rb_id in ['A', 'B']:
-        for fb_id in [3, 4]:
-            print('Process FU{}-RBSP{} conjuntion summary plots'.format(fb_id, rb_id))
-            paths = glob.glob('{}/FU{}_RBSP{}_conjunctions_dL{}_dMLT{}_hr.txt'.format(
-                                CONJUNCTION_DIR, fb_id, rb_id, int(dL*10), int(dMLT*10)))
-            assert len(paths) == 1, 'None or multiple conjunction files found!'
-            print('Loading file:', paths[0])
-
-            # Run summary plot generator.
-            cPlt = FIREBIRD_RBSP_Conjunction_Plots(
-                rb_id, fb_id, plot_empty_data=True)
-            cPlt.readCSVConjunctionData(paths[0])
-            cPlt.generatePlots(saveImg=True)
+    #         cPlt.generatePlots(saveImg=True)
