@@ -120,6 +120,10 @@ class FIREBIRD_RBSP_Conjunction_Plots:
                     for a in ax: # Clear subplots
                         a.cla()
                     continue
+                if 'no filtered spectra found' in str(err):
+                    print('WARNING: No EMFISIS spectra found '
+                        'in conjunction time range. Skipping plot')
+                    continue
                 else:
                     raise
 
