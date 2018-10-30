@@ -9,11 +9,11 @@ import re
 
 import spacepy.datamodel
 
-sys.path.append('/home/mike/research/mission-tools/misc')
+sys.path.append('/home/mike/research/mission_tools/misc')
 import dates_in_filenames
 
 CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools'
-                    '/proc_all/conjunctions')
+                    '/proc_all/')
 HIRES_DIR = '/home/mike/research/firebird/Datafiles'
 
 class ConjunctionHRfilter:
