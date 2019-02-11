@@ -13,7 +13,7 @@ sys.path.append('/home/mike/research/mission_tools/misc')
 import dates_in_filenames
 
 CONJUNCTION_DIR = ('/home/mike/research/conjunction-tools'
-                    '/proc_all/')
+                    '/proc_all/conjunctions/')
 HIRES_DIR = '/home/mike/research/firebird/Datafiles'
 
 class ConjunctionHRfilter:
@@ -142,10 +142,9 @@ class ConjunctionHRfilter:
 
 # Load the conjunction files one by one
 cPaths = glob.glob(os.path.join(CONJUNCTION_DIR, '*.txt'))
+procPaths = [f for f in cPaths if ('camp' not in f) and ('hr' not in f)]
 
-for f in cPaths:
-    if ('camp' in f) or ('hr' in f):
-        continue
+for f in procPaths:
     c = ConjunctionHRfilter(f, HIRES_DIR)
     c.filterConjunctions()
     c.saveConjunctions()

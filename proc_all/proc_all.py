@@ -12,13 +12,13 @@ baseDir = '/home/mike/research/conjunction-tools/proc_all'
 fb_dir = os.path.join(baseDir, 'firebird_camp_magephem')
 rbsp_dir = os.path.join(baseDir, 'rbsp_camp_magephem')
 mission = 'FIREBIRD'
-camp = '20' # If process all campaigns, camp = ''
+camp = '' # If process all campaigns, camp = ''
 
-dLArr = [1]
-dMLTArr = [1]
+dLArr = [1, 0.5]
+dMLTArr = [1, 0.5]
 
 for dL, dMLT in zip(dLArr, dMLTArr):
-    for fb_id, rb_id in itertools.product([3, 4], ['arase']): # 'rbspa', 'rbspb', 
+    for fb_id, rb_id in itertools.product([3, 4], ['rbspa', 'rbspb']): # 'arase', rbspa', 'rbspb', 
         # Find the mission files.
         fbFiles = sorted(glob.glob(
                     os.path.join(fb_dir, 'FU{}_camp{}*'.format(fb_id, camp))
