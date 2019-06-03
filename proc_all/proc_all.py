@@ -12,7 +12,7 @@ baseDir = '/home/mike/research/conjunction-tools/proc_all'
 fb_dir = os.path.join(baseDir, 'firebird_camp_magephem')
 rbsp_dir = os.path.join(baseDir, 'rbsp_camp_magephem')
 mission = 'FIREBIRD'
-camp = '' # If process all campaigns, camp = ''
+camp = 22 # If process all campaigns, camp = ''
 
 dLArr = [1, 0.5]
 dMLTArr = [1, 0.5]
