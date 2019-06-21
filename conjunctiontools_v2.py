@@ -58,6 +58,7 @@ class MagneticConjunctions(IRBEM.MagFields):
         self.lowerL = kwargs.get('lowerL', 3)
         self.Lthresh = kwargs.get('Lthresh', 1)
         self.MLTthresh = kwargs.get('MLTthresh', 1)
+        self.verbose = kwargs.get('verbose', False)
         self.missionA = missionA
         self.missionB = missionB
 
@@ -318,7 +319,8 @@ class MagneticConjunctions(IRBEM.MagFields):
                 self.dmin[ci] = np.min(np.append(dN[dN > 0], dS[dS > 0]))
             except ValueError as err:
                 if str(err) == 'zero-size array to reduction operation minimum which has no identity':
-                    print('WARNING: dmin not found (IRBEM error values)')
+                    if self.verbose:
+                        print('WARNING: dmin not found (IRBEM error values)')
                     self.dmin[ci] == -1E31
                 else: 
                     raise
@@ -444,7 +446,9 @@ class MagneticConjunctions(IRBEM.MagFields):
         idt = np.where(self.kp['dateTime'] == t)[0]
 
         if len(idt) == 0:
-            print('WARNING: No kp value found at time {}. Returning default kp of {}'.format(t, default))
+            if self.verbose:
+                print('WARNING: No kp value found at time {}. '
+                      'Returning default kp of {}'.format(t, default))
             return 20
         return self.kp['kp'][idt[0]]
 
