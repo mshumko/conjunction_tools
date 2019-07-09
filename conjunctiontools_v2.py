@@ -331,12 +331,10 @@ class MagneticConjunctions(IRBEM.MagFields):
                 )   
             # Save mean values of L and MLT at the closest approach.
             self.meanL[ci] = 0.5*(np.abs(LA[idx]) + np.abs(LB[idx]))
-            meanMLT = np.arctan2(np.sin(MLTA[idx]*2*np.pi/24), np.cos(MLTB[idx]*2*np.pi/24))
-            if meanMLT > 0:
-                self.meanMLT[ci] = meanMLT
+            if hasattr(idx, '__len__'):
+                self.meanMLT[ci] = MLTA[idx[len(idx)//2]]
             else:
-                self.meanMLT[ci] = 24+meanMLT
-            #self.meanMLT[ci] = 0.5*(MLTA[idx] + MLTB[idx])
+                self.meanMLT[ci] = MLTA[idx]
         return
 
     def _interp_geo_pos(self, startInd, endInd):
