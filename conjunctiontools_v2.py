@@ -330,7 +330,7 @@ class MagneticConjunctions(IRBEM.MagFields):
                 interpDict['dateTime'], LA, MLTA, LB, MLTB
                 )   
             # Save mean values of L and MLT at the closest approach.
-            self.meanL[ci] = 0.5*(np.abs(LA[idx]) + np.abs(LB[idx]))
+            self.meanL[ci] = np.mean(np.abs(LA[idx]) + np.abs(LB[idx]))
             if hasattr(idx, '__len__'):
                 self.meanMLT[ci] = MLTA[idx[len(idx)//2]]
             else:
