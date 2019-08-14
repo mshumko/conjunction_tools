@@ -2,6 +2,7 @@
 /data/daily_conjunctions/*
 __pycache__/
 /proc_all/rbsp_camp_ephem/
+/proc_all/dsx_camp_ephem/
 *.png
 *.pdf
 *.txt

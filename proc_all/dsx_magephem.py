@@ -1,4 +1,4 @@
-# This script maps FIREBIRD ephem to magephem using IRBEM
+# This script maps DSX ephem to magephem using IRBEM
 import numpy as np
 import csv
 import glob
@@ -9,8 +9,8 @@ import IRBEM
 sys.path.insert(0, '/home/mike/research/firebird/data_processing/magnetic_ephemeris')
 import make_magnetic_ephemeris
 
-inDir = '/home/mike/research/firebird/Datafiles/'
-outDir = '/home/mike/research/conjunction-tools/proc_all/firebird_camp_magephem/'
+inDir = '/home/mike/research/conjunction-tools/proc_all/dsx_camp_ephem'
+outDir = '/home/mike/research/conjunction-tools/proc_all/dsx_camp_magephem'
 # If none, will look for existing kp in data. Change to a number when forward propagating!
 singleKp = 20 
 camp = 24
