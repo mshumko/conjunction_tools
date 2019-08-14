@@ -329,8 +329,8 @@ class MagneticConjunctions(IRBEM.MagFields):
             self.startTime[ci], self.endTime[ci], self.minMLT[ci], idx = self._find_c_bounds(
                 interpDict['dateTime'], LA, MLTA, LB, MLTB
                 )   
-            # Save mean values of L and MLT at the closest approach.
-            self.meanL[ci] = np.mean(np.abs(LA[idx]) + np.abs(LB[idx]))
+            # Save mean values of L and center MLT values at the closest approach.
+            self.meanL[ci] = 0.5*(np.mean(np.abs(LA[idx])) + np.mean(np.abs(LB[idx])))
             if hasattr(idx, '__len__'):
                 self.meanMLT[ci] = MLTA[idx[len(idx)//2]]
             else:
@@ -473,11 +473,11 @@ def dmlt(a, b):
     AUTHOR:  Mykhaylo Shumko
     MOD:     2017-04-30
     """
-    # Convert the difference to spduo-angle.
-    arg = 2*np.pi*np.abs(a - b)/24 
-    # Utilize the even symmetry of cos to get 
-    # the correct dmlt.
-    return 24/(2*np.pi)*np.arccos(np.cos(arg))
+    # Find the difference (only correct if dMLT < 12!).
+    dMLT = np.abs(a - b)
+    # Correct the dMLT > 12 values by looking at the reciprical
+    dMLT[dMLT > 12] = 24 - dMLT[dMLT > 12]
+    return dMLT
 
 if __name__ == '__main__':
     missionA = 'FIREBIRD'
