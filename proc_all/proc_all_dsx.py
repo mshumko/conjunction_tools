@@ -4,6 +4,7 @@ import os
 import sys
 import glob
 import itertools
+import matplotlib.pyplot as plt
 
 sys.path.insert(0, '/home/mike/research/conjunction-tools/')
 import conjunctiontools_v2
@@ -11,11 +12,13 @@ import conjunctiontools_v2
 baseDir = '/home/mike/research/conjunction-tools/proc_all'
 fb_dir = os.path.join(baseDir, 'firebird_camp_magephem')
 rbsp_dir = os.path.join(baseDir, 'dsx_camp_magephem')
-mission = 'FIREBIRD'
+#mission = 'FIREBIRD'
 camp = 24 # If process all campaigns, camp = ''
 
 dLArr = [1]
 dMLTArr = [1]
+
+debug = True
 
 for dL, dMLT in zip(dLArr, dMLTArr):
     for fb_id in [3, 4]: # 'arase', rbspa', 'rbspb', 
@@ -32,15 +35,18 @@ for dL, dMLT in zip(dLArr, dMLTArr):
                 os.path.basename(fb_f), (os.path.basename(rb_f))))
 
             m = conjunctiontools_v2.MagneticConjunctions(
-                mission, mission, fb_f, rb_f, Lthresh=dL, MLTthresh=dMLT)
+                'FIREBIRD', 'DSX', fb_f, rb_f, Lthresh=dL, MLTthresh=dMLT)
             m.calcConjunctions()
-            if camp == '':
-                m.saveData(os.path.join(baseDir, 'conjunctions', 
-                    'FU{}_DSX_conjunctions_dL{}_dMLT{}.txt'.format(
-                        fb_id, int(10*dL), int(10*dMLT) )
-                    ), mode='a')
+            if debug:
+                m.plot_overview()
             else:
-                m.saveData(os.path.join(baseDir, 'conjunctions', 
-                'FU{}_DSX_camp{}_conjunctions_dL{}_dMLT{}.txt'.format(
-                    fb_id, camp, int(10*dL), int(10*dMLT))
-                    ), mode='a')
+                if camp == '':
+                    m.saveData(os.path.join(baseDir, 'conjunctions', 
+                        'FU{}_DSX_conjunctions_dL{}_dMLT{}.txt'.format(
+                            fb_id, int(10*dL), int(10*dMLT) )
+                        ), mode='a')
+                else:
+                    m.saveData(os.path.join(baseDir, 'conjunctions', 
+                    'FU{}_DSX_camp{}_conjunctions_dL{}_dMLT{}.txt'.format(
+                        fb_id, camp, int(10*dL), int(10*dMLT))
+                        ), mode='a')

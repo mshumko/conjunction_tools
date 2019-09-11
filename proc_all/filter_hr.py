@@ -140,14 +140,15 @@ class ConjunctionHRfilter:
                 self.cData[key] = data[validInd, i]
         return
 
-# Load the conjunction files one by one
-cPaths = glob.glob(os.path.join(CONJUNCTION_DIR, '*.txt'))
-procPaths = [f for f in cPaths if ('camp' not in f) and ('hr' not in f)]
+if __name__ == '__main__':
+    # Load the conjunction files one by one
+    cPaths = glob.glob(os.path.join(CONJUNCTION_DIR, '*.txt'))
+    procPaths = [f for f in cPaths if ('camp' not in f) and ('hr' not in f)]
 
-for f in procPaths:
-    c = ConjunctionHRfilter(f, HIRES_DIR)
-    c.filterConjunctions()
-    c.saveConjunctions()
+    for f in procPaths:
+        c = ConjunctionHRfilter(f, HIRES_DIR)
+        c.filterConjunctions()
+        c.saveConjunctions()
     
     
         

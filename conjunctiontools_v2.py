@@ -25,6 +25,12 @@ keyDict = {
             'lat':'Rgeod_LatLon', 'latcol':0, 'lon':'Rgeod_LatLon', 
             'loncol':1, 'alt':'Rgeod_Altitude'
             },
+        
+        'DSX':{
+            'L':'McllwainL', 'MLT':'MLT', 'time':'dateTime', 
+            'lat':'Rgeod_LatLon', 'latcol':0, 'lon':'Rgeod_LatLon', 
+            'loncol':1, 'alt':'Rgeod_Altitude'
+            },
 
         'AC6':{
             'L':'Lm_OPQ', 'MLT':'MLT_OPQ', 'time':'dateTime',
@@ -180,6 +186,34 @@ class MagneticConjunctions(IRBEM.MagFields):
                 a.axvline(self.endTime[i], c='r')
                 a.legend(loc=1)
             plt.tight_layout()
+        return
+
+    def plot_overview(self):
+        """
+        Plots the overview of the L and MLT of both spacecraft. Also plots the 
+        dL and dMLT.
+        """
+        fig, ax = plt.subplots(3, sharex=True)
+        
+        ax[0].plot(self.magA['dateTime'], self.magA['L'],
+                     'r', label='{}'.format(self.missionA))
+        ax[0].plot(self.magB['dateTime'], self.magB['L'],
+                     'b', label='{}'.format(self.missionB))
+        ax[0].set_ylabel('L')
+                     
+        ax[1].plot(self.magA['dateTime'], self.magA['MLT'],
+                     'r', label='{}'.format(self.missionA))
+        ax[1].plot(self.magB['dateTime'], self.magB['MLT'],
+                     'b', label='{}'.format(self.missionB))
+        ax[1].set_ylabel('MLT')
+                     
+        ax[2].plot(self.magA['dateTime'], self.dL, 'k', label='dL')
+        ax[2].plot(self.magB['dateTime'], self.dMLT,'k--', label='dMLT')
+        ax[2].set_ylabel('Difference')    
+        
+        ax[0].legend()
+        ax[2].legend()
+        plt.show()
         return
 
     def _load_magephem(self, fPath, args):

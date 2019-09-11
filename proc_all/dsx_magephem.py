@@ -16,7 +16,7 @@ singleKp = 20
 camp = 24
 
 overwrite = False # Flag to overwrite any magephem files already generated
-inPaths = sorted(glob.glob(os.path.join(inDir, '**/*LLA_camp{}*'.format(camp)), recursive=True))
+inPaths = sorted(glob.glob(os.path.join(inDir, '**/*camp{}*'.format(camp)), recursive=True))
 
 # Now get a list of outFiles (magephem files to save to).
 inBasename = [os.path.basename(f) for f in inPaths]
