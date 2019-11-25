@@ -11,14 +11,14 @@ import conjunctiontools_v2
 
 baseDir = '/home/mike/research/conjunction-tools/proc_all'
 fb_dir = os.path.join(baseDir, 'firebird_camp_magephem')
-rbsp_dir = os.path.join(baseDir, 'dsx_camp_magephem')
+dsx_dir = os.path.join(baseDir, 'dsx_camp_magephem')
 #mission = 'FIREBIRD'
-camp = 24 # If process all campaigns, camp = ''
+camp = 25 # If process all campaigns, camp = ''
 
 dLArr = [1]
 dMLTArr = [1]
 
-debug = True
+debug = False
 
 for dL, dMLT in zip(dLArr, dMLTArr):
     for fb_id in [3, 4]: # 'arase', rbspa', 'rbspb', 
@@ -27,7 +27,7 @@ for dL, dMLT in zip(dLArr, dMLTArr):
                     os.path.join(fb_dir, 'FU{}_camp{}*'.format(fb_id, camp))
                     ))
         dsxFiles = sorted(glob.glob(
-                    os.path.join(rbsp_dir, 'DSX_camp{}*'.format(camp))
+                    os.path.join(dsx_dir, 'DSX_camp{}*'.format(camp))
                     ))
 
         for fb_f, rb_f in zip(fbFiles, dsxFiles):
