@@ -14,8 +14,8 @@ rbsp_dir = os.path.join(baseDir, 'rbsp_camp_magephem')
 mission = 'FIREBIRD'
 camp = '' # If process all campaigns, camp = ''
 
-dLArr = [1, 0.5]
-dMLTArr = [1, 0.5]
+dLArr = [1]
+dMLTArr = [1]
 
 for dL, dMLT in zip(dLArr, dMLTArr):
     for fb_id, rb_id in itertools.product([3, 4], ['rbspa', 'rbspb']): # 'arase', rbspa', 'rbspb', 
