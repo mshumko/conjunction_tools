@@ -13,7 +13,7 @@ inDir = '/home/mike/research/conjunction-tools/proc_all/dsx_camp_ephem'
 outDir = '/home/mike/research/conjunction-tools/proc_all/dsx_camp_magephem'
 # If none, will look for existing kp in data. Change to a number when forward propagating!
 singleKp = 20 
-camp = 25
+camp = 26
 
 overwrite = False # Flag to overwrite any magephem files already generated
 inPaths = sorted(glob.glob(os.path.join(inDir, '**/*camp{}*'.format(camp)), recursive=True))

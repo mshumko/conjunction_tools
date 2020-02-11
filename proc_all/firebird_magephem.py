@@ -12,7 +12,7 @@ import make_magnetic_ephemeris
 inDir = '/home/mike/research/firebird/Datafiles/'
 outDir = '/home/mike/research/conjunction-tools/proc_all/firebird_camp_magephem/'
 # If none, will look for existing kp in data. Change to a number when forward propagating!
-singleKp = None 
+singleKp = 20 
 camp = ''
 
 overwrite = False # Flag to overwrite any magephem files already generated
